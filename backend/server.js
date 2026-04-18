@@ -110,6 +110,15 @@ function sendHtml(res, status, html) {
   res.end(html);
 }
 
+function parseJsonMaybe(raw) {
+  if (!raw || !raw.trim()) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
 function postForm(url, data) {
   return new Promise((resolve, reject) => {
     const body = new URLSearchParams(data).toString();
@@ -126,11 +135,11 @@ function postForm(url, data) {
       let raw = '';
       res.on('data', (chunk) => raw += chunk);
       res.on('end', () => {
-        try {
-          resolve({ status: res.statusCode || 500, json: JSON.parse(raw) });
-        } catch (err) {
-          reject(err);
-        }
+        resolve({
+          status: res.statusCode || 500,
+          raw,
+          json: parseJsonMaybe(raw)
+        });
       });
     });
     req.on('error', reject);
@@ -146,17 +155,18 @@ function graphGet(path, accessToken) {
       path,
       method: 'GET',
       headers: {
-        Authorization: `Bearer ${accessToken}`
+        Authorization: `Bearer ${accessToken}`,
+        Accept: 'application/json'
       }
     }, (res) => {
       let raw = '';
       res.on('data', (chunk) => raw += chunk);
       res.on('end', () => {
-        try {
-          resolve({ status: res.statusCode || 500, json: JSON.parse(raw) });
-        } catch (err) {
-          reject(err);
-        }
+        resolve({
+          status: res.statusCode || 500,
+          raw,
+          json: parseJsonMaybe(raw)
+        });
       });
     });
     req.on('error', reject);
@@ -183,7 +193,11 @@ async function refreshAccessTokenIfNeeded() {
   });
 
   if (tokenResponse.status >= 400) {
-    throw new Error(`Refresh failed: ${JSON.stringify(tokenResponse.json)}`);
+    throw new Error(`Refresh failed: ${JSON.stringify(tokenResponse.json || tokenResponse.raw)}`);
+  }
+
+  if (!tokenResponse.json) {
+    throw new Error('Refresh returned a non-JSON response.');
   }
 
   const refreshed = {
@@ -279,7 +293,11 @@ const server = http.createServer(async (req, res) => {
       });
 
       if (tokenResponse.status >= 400) {
-        return sendHtml(res, 500, `<h1>Token exchange failed</h1><pre>${JSON.stringify(tokenResponse.json, null, 2)}</pre>`);
+        return sendHtml(res, 500, `<h1>Token exchange failed</h1><pre>${JSON.stringify(tokenResponse.json || tokenResponse.raw, null, 2)}</pre>`);
+      }
+
+      if (!tokenResponse.json) {
+        return sendHtml(res, 500, '<h1>Token exchange failed</h1><p>Microsoft returned a non-JSON response.</p>');
       }
 
       saveTokenStore({
@@ -316,12 +334,15 @@ const server = http.createServer(async (req, res) => {
         graphGet('/v1.0/me/drive/root/children?$top=20&$select=id,name,webUrl,lastModifiedDateTime,folder,file', accessToken)
       ]);
 
-      const failures = [me, messages, events, drive].filter((r) => r.status >= 400);
+      const failures = [me, messages, events, drive].filter((r) => r.status >= 400 || !r.json);
       if (failures.length) {
         return sendJson(res, 502, {
           ok: false,
           message: 'One or more Microsoft Graph calls failed.',
-          failures: failures.map((r) => r.json)
+          failures: failures.map((r) => ({
+            status: r.status,
+            body: r.json || r.raw || null
+          }))
         });
       }
 
