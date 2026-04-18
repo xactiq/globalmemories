@@ -1,0 +1,167 @@
+{
+  "nodes": [
+    {
+      "id": "person:mac",
+      "label": "Mac",
+      "group": "person"
+    },
+    {
+      "id": "assistant:loganopenclawbot",
+      "label": "loganopenclawbot",
+      "group": "assistant"
+    },
+    {
+      "id": "topic:openclaw",
+      "label": "OpenClaw",
+      "group": "topic"
+    },
+    {
+      "id": "topic:telegram",
+      "label": "Telegram",
+      "group": "topic"
+    },
+    {
+      "id": "topic:discord",
+      "label": "Discord",
+      "group": "topic"
+    },
+    {
+      "id": "topic:pairing",
+      "label": "Pairing",
+      "group": "topic"
+    },
+    {
+      "id": "project:telegram-setup",
+      "label": "Telegram setup",
+      "group": "project"
+    },
+    {
+      "id": "project:openclaw-identity-bootstrap",
+      "label": "OpenClaw identity bootstrap",
+      "group": "project"
+    },
+    {
+      "id": "person:botfather",
+      "label": "BotFather",
+      "group": "person"
+    },
+    {
+      "id": "memory:2026-04-18-session-greeting",
+      "label": "2026-04-18-session-greeting",
+      "group": "memory",
+      "file": "memory/2026-04-18-session-greeting.md"
+    },
+    {
+      "id": "memory:2026-04-18-telegram-setup",
+      "label": "2026-04-18-telegram-setup",
+      "group": "memory",
+      "file": "memory/2026-04-18-telegram-setup.md"
+    }
+  ],
+  "links": [
+    {
+      "source": "person:mac",
+      "target": "memory:2026-04-18-session-greeting",
+      "kind": "mentioned-in"
+    },
+    {
+      "source": "assistant:loganopenclawbot",
+      "target": "memory:2026-04-18-session-greeting",
+      "kind": "mentioned-in"
+    },
+    {
+      "source": "memory:2026-04-18-session-greeting",
+      "target": "topic:openclaw",
+      "kind": "about"
+    },
+    {
+      "source": "person:mac",
+      "target": "memory:2026-04-18-telegram-setup",
+      "kind": "mentioned-in"
+    },
+    {
+      "source": "assistant:loganopenclawbot",
+      "target": "memory:2026-04-18-telegram-setup",
+      "kind": "mentioned-in"
+    },
+    {
+      "source": "project:telegram-setup",
+      "target": "memory:2026-04-18-telegram-setup",
+      "kind": "mentioned-in"
+    },
+    {
+      "source": "person:botfather",
+      "target": "memory:2026-04-18-telegram-setup",
+      "kind": "mentioned-in"
+    },
+    {
+      "source": "memory:2026-04-18-telegram-setup",
+      "target": "topic:telegram",
+      "kind": "about"
+    },
+    {
+      "source": "memory:2026-04-18-telegram-setup",
+      "target": "topic:openclaw",
+      "kind": "about"
+    },
+    {
+      "source": "memory:2026-04-18-telegram-setup",
+      "target": "topic:pairing",
+      "kind": "about"
+    },
+    {
+      "source": "memory:2026-04-18-session-greeting",
+      "target": "topic:openclaw",
+      "kind": "about",
+      "weight": 1
+    },
+    {
+      "source": "assistant:loganopenclawbot",
+      "target": "memory:2026-04-18-session-greeting",
+      "kind": "remembers",
+      "weight": 1
+    },
+    {
+      "source": "person:mac",
+      "target": "memory:2026-04-18-session-greeting",
+      "kind": "participated-in",
+      "weight": 1
+    },
+    {
+      "source": "memory:2026-04-18-telegram-setup",
+      "target": "project:telegram-setup",
+      "kind": "about",
+      "weight": 1
+    },
+    {
+      "source": "memory:2026-04-18-telegram-setup",
+      "target": "topic:openclaw",
+      "kind": "about",
+      "weight": 1
+    },
+    {
+      "source": "memory:2026-04-18-telegram-setup",
+      "target": "topic:pairing",
+      "kind": "about",
+      "weight": 1
+    },
+    {
+      "source": "person:botfather",
+      "target": "memory:2026-04-18-telegram-setup",
+      "kind": "appears-in",
+      "weight": 1
+    },
+    {
+      "source": "assistant:loganopenclawbot",
+      "target": "memory:2026-04-18-telegram-setup",
+      "kind": "remembers",
+      "weight": 1
+    },
+    {
+      "source": "person:mac",
+      "target": "memory:2026-04-18-telegram-setup",
+      "kind": "participated-in",
+      "weight": 1
+    }
+  ]
+}

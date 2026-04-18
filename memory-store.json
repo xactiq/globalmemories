@@ -1,0 +1,339 @@
+{
+  "entities": [
+    {
+      "id": "person:mac",
+      "type": "person",
+      "label": "Mac",
+      "aliases": [
+        "loganmac10"
+      ],
+      "meta": {}
+    },
+    {
+      "id": "assistant:loganopenclawbot",
+      "type": "assistant",
+      "label": "loganopenclawbot",
+      "aliases": [],
+      "meta": {}
+    },
+    {
+      "id": "topic:openclaw",
+      "type": "topic",
+      "label": "OpenClaw",
+      "aliases": [],
+      "meta": {}
+    },
+    {
+      "id": "topic:telegram",
+      "type": "topic",
+      "label": "Telegram",
+      "aliases": [],
+      "meta": {}
+    },
+    {
+      "id": "topic:discord",
+      "type": "topic",
+      "label": "Discord",
+      "aliases": [],
+      "meta": {}
+    },
+    {
+      "id": "topic:pairing",
+      "type": "topic",
+      "label": "Pairing",
+      "aliases": [],
+      "meta": {}
+    },
+    {
+      "id": "project:telegram-setup",
+      "type": "project",
+      "label": "Telegram setup",
+      "aliases": [],
+      "meta": {}
+    },
+    {
+      "id": "project:openclaw-identity-bootstrap",
+      "type": "project",
+      "label": "OpenClaw identity bootstrap",
+      "aliases": [],
+      "meta": {}
+    },
+    {
+      "id": "person:botfather",
+      "type": "person",
+      "label": "BotFather",
+      "aliases": [],
+      "meta": {}
+    }
+  ],
+  "memories": [
+    {
+      "id": "memory:2026-04-18-session-greeting",
+      "title": "2026-04-18-session-greeting",
+      "sourceId": "source:2026-04-18-session-greeting.md",
+      "timestamp": "2026-04-18",
+      "platform": "workspace",
+      "summary": "user: A new session was started via /new or /reset. If runtime-provided startup context is included for this first turn, use it before responding to the user. Then greet the user in your configured persona, if one is provided. Be yourself - use your defined voice, mannerisms, and mood. Keep it to 1-3 sentences and ask what they want to do. If the runtime model differs from default_model in the system prompt, mention the default model. Do not mention internal steps, files, tools, or reasoning. as",
+      "excerpt": "# Session: 2026-04-18 11:19:41 UTC\n\n- **Session Key**: agent:main:main\n- **Session ID**: 61ec711e-5bd6-4fdd-8ea7-ec87e654e585\n- **Source**: webchat\n\n## Conversation Summary\n\nuser: A new session was started via /new or /reset. If runtime-provided startup context is included for this first turn, use it before responding to the user. Then greet the user in your configured persona, if one is provided. Be yourself - use your defined voice, mannerisms, and mood. Keep it to 1-3 sentences and ask what they want to do. If the runtime model differs from default_model in the system prompt, mention the default model. Do not mention internal steps, files, tools, or reasoning.\nCurrent time: Saturday, April 18th, 2026 - 6:19 AM (America/Chicago) / 2026-04-18 11:19 UTC\nassistant: Hey. I’m still figuring out exactly who I am, but I’m here and ready to be useful. What do you want to do first?\nuser: Sender (untrusted metadata):\n```json\n{\n  \"label\": \"openclaw-control-ui\",\n  \"id\": \"openclaw-control-ui\"\n}\n```\n\n[Sat 2026-04-18 06:19 CDT] [REDACTED_DISCORD_TOKEN]\nassistant: Hey. I’m here. What do you want to work on?\n",
+      "entityIds": [
+        "person:mac",
+        "assistant:loganopenclawbot"
+      ],
+      "topicIds": [
+        "topic:openclaw"
+      ],
+      "conversationId": "conversation:2026-04-18-session-greeting",
+      "rawPath": "memory/2026-04-18-session-greeting.md"
+    },
+    {
+      "id": "memory:2026-04-18-telegram-setup",
+      "title": "2026-04-18-telegram-setup",
+      "sourceId": "source:2026-04-18-telegram-setup.md",
+      "timestamp": "2026-04-18",
+      "platform": "workspace",
+      "summary": "assistant: Perfect. user: Sender (untrusted metadata): assistant: I hit a real blocker: the config tool is refusing writes because this gateway says **pairing required** for config changes. user: System (untrusted): [2026-04-18 05:49:09 CDT] Exec completed (salty-su, code 0) :: │ 49k/200k (24%) · 🗄️ 100% cached │ └─────────────────────────────────────────────────┴────────┴──────────┴──────────────┴─────────────────────────────────┘ FAQ: https://docs.ope…",
+      "excerpt": "# Session: 2026-04-18 11:19:06 UTC\n\n- **Session Key**: agent:main:main\n- **Session ID**: 5d8fbf62-a95b-4f6b-9243-32e2ba2bb54c\n- **Source**: webchat\n\n## Conversation Summary\n\nassistant: Perfect.\n\nNow BotFather should have replied with a message containing your **bot token**.\n\nPlease copy that token and paste it here.  \nOnce you do, I can help wire Telegram into OpenClaw for you.\n\nImportant: that token is secret, so after setup we should avoid leaving it lying around anywhere unnecessary.\nuser: Sender (untrusted metadata):\n```json\n{\n  \"label\": \"openclaw-control-ui\",\n  \"id\": \"openclaw-control-ui\"\n}\n```\n\n[Sat 2026-04-18 05:48 CDT] [REDACTED_TOKEN]\nassistant: I hit a real blocker: the config tool is refusing writes because this gateway says **pairing required** for config changes.\n\nHere’s the good news:\n- your bot is created\n- I found the right Telegram config fields\n- the remaining step is just enabling Telegram in OpenClaw\n\nFastest path now:\n1. in this web UI, run the OpenClaw configure flow or allow config writes\n2. then I can finish the patch for you immediately\n\nThe settings I’m trying to apply are essentially:\n- enable Telegram plugin\n- set your bot token\n- `dmPolicy: pairing`\n- `",
+      "entityIds": [
+        "person:mac",
+        "assistant:loganopenclawbot",
+        "project:telegram-setup",
+        "person:botfather"
+      ],
+      "topicIds": [
+        "topic:telegram",
+        "topic:openclaw",
+        "topic:pairing"
+      ],
+      "conversationId": "conversation:2026-04-18-telegram-setup",
+      "rawPath": "memory/2026-04-18-telegram-setup.md"
+    }
+  ],
+  "relationships": [
+    {
+      "source": "memory:2026-04-18-session-greeting",
+      "target": "topic:openclaw",
+      "kind": "about",
+      "weight": 1
+    },
+    {
+      "source": "assistant:loganopenclawbot",
+      "target": "memory:2026-04-18-session-greeting",
+      "kind": "remembers",
+      "weight": 1
+    },
+    {
+      "source": "person:mac",
+      "target": "memory:2026-04-18-session-greeting",
+      "kind": "participated-in",
+      "weight": 1
+    },
+    {
+      "source": "memory:2026-04-18-telegram-setup",
+      "target": "project:telegram-setup",
+      "kind": "about",
+      "weight": 1
+    },
+    {
+      "source": "memory:2026-04-18-telegram-setup",
+      "target": "topic:openclaw",
+      "kind": "about",
+      "weight": 1
+    },
+    {
+      "source": "memory:2026-04-18-telegram-setup",
+      "target": "topic:pairing",
+      "kind": "about",
+      "weight": 1
+    },
+    {
+      "source": "person:botfather",
+      "target": "memory:2026-04-18-telegram-setup",
+      "kind": "appears-in",
+      "weight": 1
+    },
+    {
+      "source": "assistant:loganopenclawbot",
+      "target": "memory:2026-04-18-telegram-setup",
+      "kind": "remembers",
+      "weight": 1
+    },
+    {
+      "source": "person:mac",
+      "target": "memory:2026-04-18-telegram-setup",
+      "kind": "participated-in",
+      "weight": 1
+    }
+  ],
+  "sources": [
+    {
+      "id": "source:2026-04-18-session-greeting.md",
+      "path": "memory/2026-04-18-session-greeting.md",
+      "kind": "memory-file",
+      "platform": "workspace"
+    },
+    {
+      "id": "source:2026-04-18-telegram-setup.md",
+      "path": "memory/2026-04-18-telegram-setup.md",
+      "kind": "memory-file",
+      "platform": "workspace"
+    },
+    {
+      "id": "vault:people/botfather.md",
+      "path": "obsidian-vault/people/botfather.md",
+      "kind": "obsidian-note",
+      "platform": "obsidian"
+    },
+    {
+      "id": "vault:people/cdt.md",
+      "path": "obsidian-vault/people/cdt.md",
+      "kind": "obsidian-note",
+      "platform": "obsidian"
+    },
+    {
+      "id": "vault:people/if.md",
+      "path": "obsidian-vault/people/if.md",
+      "kind": "obsidian-note",
+      "platform": "obsidian"
+    },
+    {
+      "id": "vault:people/loganopenclawbot.md",
+      "path": "obsidian-vault/people/loganopenclawbot.md",
+      "kind": "obsidian-note",
+      "platform": "obsidian"
+    },
+    {
+      "id": "vault:people/mac.md",
+      "path": "obsidian-vault/people/mac.md",
+      "kind": "obsidian-note",
+      "platform": "obsidian"
+    },
+    {
+      "id": "vault:people/ne627h7e.md",
+      "path": "obsidian-vault/people/ne627h7e.md",
+      "kind": "obsidian-note",
+      "platform": "obsidian"
+    },
+    {
+      "id": "vault:people/run.md",
+      "path": "obsidian-vault/people/run.md",
+      "kind": "obsidian-note",
+      "platform": "obsidian"
+    },
+    {
+      "id": "vault:people/sat.md",
+      "path": "obsidian-vault/people/sat.md",
+      "kind": "obsidian-note",
+      "platform": "obsidian"
+    },
+    {
+      "id": "vault:people/ui.md",
+      "path": "obsidian-vault/people/ui.md",
+      "kind": "obsidian-note",
+      "platform": "obsidian"
+    },
+    {
+      "id": "vault:people/utc.md",
+      "path": "obsidian-vault/people/utc.md",
+      "kind": "obsidian-note",
+      "platform": "obsidian"
+    },
+    {
+      "id": "vault:people/what.md",
+      "path": "obsidian-vault/people/what.md",
+      "kind": "obsidian-note",
+      "platform": "obsidian"
+    },
+    {
+      "id": "vault:projects/openclaw-identity-bootstrap.md",
+      "path": "obsidian-vault/projects/openclaw-identity-bootstrap.md",
+      "kind": "obsidian-note",
+      "platform": "obsidian"
+    },
+    {
+      "id": "vault:projects/telegram-setup.md",
+      "path": "obsidian-vault/projects/telegram-setup.md",
+      "kind": "obsidian-note",
+      "platform": "obsidian"
+    },
+    {
+      "id": "vault:topics/bot.md",
+      "path": "obsidian-vault/topics/bot.md",
+      "kind": "obsidian-note",
+      "platform": "obsidian"
+    },
+    {
+      "id": "vault:topics/discord.md",
+      "path": "obsidian-vault/topics/discord.md",
+      "kind": "obsidian-note",
+      "platform": "obsidian"
+    },
+    {
+      "id": "vault:topics/gateway.md",
+      "path": "obsidian-vault/topics/gateway.md",
+      "kind": "obsidian-note",
+      "platform": "obsidian"
+    },
+    {
+      "id": "vault:topics/openclaw.md",
+      "path": "obsidian-vault/topics/openclaw.md",
+      "kind": "obsidian-note",
+      "platform": "obsidian"
+    },
+    {
+      "id": "vault:topics/pairing.md",
+      "path": "obsidian-vault/topics/pairing.md",
+      "kind": "obsidian-note",
+      "platform": "obsidian"
+    },
+    {
+      "id": "vault:topics/setup.md",
+      "path": "obsidian-vault/topics/setup.md",
+      "kind": "obsidian-note",
+      "platform": "obsidian"
+    },
+    {
+      "id": "vault:topics/telegram.md",
+      "path": "obsidian-vault/topics/telegram.md",
+      "kind": "obsidian-note",
+      "platform": "obsidian"
+    },
+    {
+      "id": "vault:timeline/2026-04-18-session-greeting.md",
+      "path": "obsidian-vault/timeline/2026-04-18-session-greeting.md",
+      "kind": "obsidian-note",
+      "platform": "obsidian"
+    },
+    {
+      "id": "vault:timeline/2026-04-18-telegram-setup.md",
+      "path": "obsidian-vault/timeline/2026-04-18-telegram-setup.md",
+      "kind": "obsidian-note",
+      "platform": "obsidian"
+    },
+    {
+      "id": "vault:decisions/use-obsidian-memory-graph.md",
+      "path": "obsidian-vault/decisions/use-obsidian-memory-graph.md",
+      "kind": "obsidian-note",
+      "platform": "obsidian"
+    }
+  ],
+  "conversations": [
+    {
+      "id": "conversation:2026-04-18-session-greeting",
+      "label": "2026-04-18-session-greeting",
+      "platform": "workspace",
+      "participantIds": [
+        "person:mac",
+        "assistant:loganopenclawbot"
+      ]
+    },
+    {
+      "id": "conversation:2026-04-18-telegram-setup",
+      "label": "2026-04-18-telegram-setup",
+      "platform": "workspace",
+      "participantIds": [
+        "person:mac",
+        "assistant:loganopenclawbot"
+      ]
+    }
+  ]
+}

@@ -2,6 +2,3 @@ node_modules/
 .env
 .env.local
 .DS_Store
-memory-store.json
-hub-data.json
-graph.json
