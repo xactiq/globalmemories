@@ -2,6 +2,9 @@ const canvas = document.getElementById('scene');
 const ctx = canvas.getContext('2d');
 const details = document.getElementById('details');
 const hubstats = document.getElementById('hubstats');
+const connectorsEl = document.getElementById('connectors');
+const memoriesEl = document.getElementById('memories');
+const topchips = document.getElementById('topchips');
 
 let width = 0;
 let height = 0;
@@ -13,11 +16,14 @@ let lastX = 0;
 let lastY = 0;
 let graph = { nodes: [], links: [] };
 let projected = [];
+let hub = null;
 
 const colors = {
   memory: '#7dd3fc',
   person: '#f9a8d4',
+  assistant: '#fcd34d',
   topic: '#86efac',
+  project: '#c4b5fd',
   system: '#fcd34d',
 };
 
@@ -118,6 +124,28 @@ function draw() {
   requestAnimationFrame(draw);
 }
 
+function renderHub() {
+  if (!hub) return;
+  const active = hub.connectors.filter((c) => c.enabled).length;
+  const planned = hub.connectors.filter((c) => c.status === 'planned').length;
+  hubstats.textContent = `Hub: ${hub.counts.memories} memories, ${hub.counts.entities} entities, ${active} active connectors, ${planned} planned connectors.`;
+
+  topchips.innerHTML = [
+    `<span class="chip">${hub.counts.sources} sources</span>`,
+    `<span class="chip">${hub.counts.conversations} conversations</span>`,
+    `<span class="chip">${hub.counts.relationships} relationships</span>`
+  ].join('');
+
+  connectorsEl.innerHTML = hub.connectors.map((connector) => {
+    const tone = connector.status === 'active' ? 'ok' : connector.status === 'planned' ? 'planned' : 'warning';
+    return `<div class="card"><strong>${connector.label}</strong><div class="muted ${tone}">${connector.status} • ${connector.syncMode}</div><div class="muted">${connector.notes || ''}</div></div>`;
+  }).join('');
+
+  memoriesEl.innerHTML = hub.store.memories.slice(0, 6).map((memory) => {
+    return `<div class="card"><strong>${memory.title}</strong><div class="muted">${memory.timestamp} • ${memory.platform}</div><div class="muted">${memory.summary}</div></div>`;
+  }).join('');
+}
+
 canvas.addEventListener('mousedown', (e) => {
   dragging = true; lastX = e.clientX; lastY = e.clientY;
 });
@@ -162,10 +190,9 @@ fetch('./graph.json')
 
 fetch('./hub-data.json')
   .then((r) => r.json())
-  .then((hub) => {
-    const active = hub.connectors.filter((c) => c.enabled).length;
-    const planned = hub.connectors.filter((c) => c.status === 'planned').length;
-    hubstats.textContent = `Hub: ${hub.counts.memories} memories, ${hub.counts.entities} entities, ${active} active connectors, ${planned} planned connectors.`;
+  .then((data) => {
+    hub = data;
+    renderHub();
   })
   .catch((err) => {
     hubstats.textContent = `Could not load hub summary: ${err.message}`;

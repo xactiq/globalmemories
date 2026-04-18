@@ -3,22 +3,40 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Memory Globe</title>
+    <title>Memory Hub</title>
     <style>
       :root { color-scheme: dark; }
       body { margin: 0; font-family: Inter, system-ui, sans-serif; background: #07111f; color: #e8f0ff; }
       #app { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
       canvas { display: block; width: 100%; height: 100%; }
       .panel {
-        position: absolute; top: 16px; left: 16px; max-width: 340px;
-        background: rgba(7,17,31,.8); border: 1px solid rgba(255,255,255,.12);
+        position: absolute; top: 16px; left: 16px; width: min(360px, calc(100vw - 32px));
+        background: rgba(7,17,31,.84); border: 1px solid rgba(255,255,255,.12);
         border-radius: 14px; padding: 14px 16px; backdrop-filter: blur(10px);
       }
       .panel h1 { margin: 0 0 8px; font-size: 18px; }
       .panel p { margin: 0 0 8px; font-size: 14px; line-height: 1.4; color: #bfd0ee; }
-      .legend { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; font-size: 12px; }
-      .legend span { display: inline-flex; align-items: center; gap: 6px; }
+      .legend, .chips { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; font-size: 12px; }
+      .legend span, .chip { display: inline-flex; align-items: center; gap: 6px; }
       .dot { width: 10px; height: 10px; border-radius: 999px; display: inline-block; }
+      .chip { padding: 4px 8px; border-radius: 999px; background: rgba(255,255,255,.06); color: #dbeafe; }
+      .sidebar {
+        position: absolute; top: 16px; right: 16px; width: min(380px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto;
+        background: rgba(7,17,31,.84); border: 1px solid rgba(255,255,255,.12);
+        border-radius: 14px; padding: 14px 16px; backdrop-filter: blur(10px);
+      }
+      .section { margin-top: 16px; }
+      .section h2 { font-size: 14px; margin: 0 0 8px; color: #e8f0ff; }
+      .list { display: grid; gap: 8px; }
+      .card {
+        padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,.04);
+        border: 1px solid rgba(255,255,255,.06);
+      }
+      .card strong { display: block; font-size: 13px; margin-bottom: 4px; }
+      .muted { color: #8fa7ca; font-size: 12px; }
+      .ok { color: #86efac; }
+      .planned { color: #fcd34d; }
+      .warning { color: #fca5a5; }
     </style>
   </head>
   <body>
@@ -35,6 +53,17 @@
         </div>
         <p id="details">Loading graph…</p>
         <p id="hubstats">Loading connector hub…</p>
+        <div class="chips" id="topchips"></div>
+      </div>
+      <div class="sidebar">
+        <div class="section">
+          <h2>Connectors</h2>
+          <div class="list" id="connectors"></div>
+        </div>
+        <div class="section">
+          <h2>Recent memories</h2>
+          <div class="list" id="memories"></div>
+        </div>
       </div>
       <canvas id="scene"></canvas>
     </div>
