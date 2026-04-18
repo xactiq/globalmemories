@@ -5,6 +5,7 @@ const hubstats = document.getElementById('hubstats');
 const connectorsEl = document.getElementById('connectors');
 const sourcesEl = document.getElementById('sources');
 const memoriesEl = document.getElementById('memories');
+const settingsEl = document.getElementById('settings');
 const topchips = document.getElementById('topchips');
 const tabs = [...document.querySelectorAll('.tab')];
 
@@ -128,7 +129,7 @@ function draw() {
 
 function switchTab(name) {
   tabs.forEach((tab) => tab.classList.toggle('active', tab.dataset.tab === name));
-  ['connectors', 'sources', 'memories'].forEach((section) => {
+  ['connectors', 'sources', 'memories', 'settings'].forEach((section) => {
     document.getElementById(`tab-${section}`).classList.toggle('hidden', section !== name);
   });
 }
@@ -157,6 +158,13 @@ function renderHub() {
 
   memoriesEl.innerHTML = hub.store.memories.slice(0, 8).map((memory) => {
     return `<div class="card"><strong>${memory.title}</strong><div class="muted">${memory.timestamp} • ${memory.platform}</div><div class="muted">${memory.summary}</div><div class="actions"><span class="button">${memory.sourceId}</span></div></div>`;
+  }).join('');
+
+  settingsEl.innerHTML = hub.connectors.map((connector) => {
+    const placeholder = connector.type === 'microsoft-graph'
+      ? 'Will require backend OAuth flow and secure token storage.'
+      : 'Local connector, no OAuth required.';
+    return `<div class="setting"><label>${connector.label}</label><input value="${connector.status} • ${connector.syncMode}" readonly /><textarea readonly>${connector.notes || ''}\n\n${placeholder}</textarea><div class="actions"><span class="button">${connector.enabled ? 'Enabled' : 'Disabled'}</span><span class="button">${connector.type}</span></div></div>`;
   }).join('');
 }
 
