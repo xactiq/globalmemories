@@ -20,6 +20,9 @@ let lastY = 0;
 let graph = { nodes: [], links: [] };
 let projected = [];
 let hub = null;
+let backendStatus = null;
+
+const BACKEND_BASE = 'http://localhost:8787';
 
 const colors = {
   memory: '#7dd3fc',
@@ -134,6 +137,20 @@ function switchTab(name) {
   });
 }
 
+function renderSettings(connectors) {
+  settingsEl.innerHTML = connectors.map((connector) => {
+    const microsoft = backendStatus?.status?.connectors || {};
+    const liveState = connector.id === 'outlook' ? microsoft.outlook : connector.id === 'onedrive' ? microsoft.onedrive : null;
+    const accountLabel = backendStatus?.status?.accountLabel || 'No backend account';
+    const lastSyncAt = backendStatus?.status?.lastSyncAt || 'No sync yet';
+    const statusLine = liveState ? `${connector.status} • backend: ${liveState}` : `${connector.status} • ${connector.syncMode}`;
+    const placeholder = connector.type === 'microsoft-graph'
+      ? `Account: ${accountLabel}\nLast sync: ${lastSyncAt}\nBackend endpoint: ${BACKEND_BASE}/api/connectors/microsoft/status`
+      : 'Local connector, no OAuth required.';
+    return `<div class="setting"><label>${connector.label}</label><input value="${statusLine}" readonly /><textarea readonly>${connector.notes || ''}\n\n${placeholder}</textarea><div class="actions"><span class="button">${connector.enabled ? 'Enabled' : 'Disabled'}</span><span class="button">${connector.type}</span></div></div>`;
+  }).join('');
+}
+
 function renderHub() {
   if (!hub) return;
   const active = hub.connectors.filter((c) => c.enabled).length;
@@ -160,12 +177,19 @@ function renderHub() {
     return `<div class="card"><strong>${memory.title}</strong><div class="muted">${memory.timestamp} • ${memory.platform}</div><div class="muted">${memory.summary}</div><div class="actions"><span class="button">${memory.sourceId}</span></div></div>`;
   }).join('');
 
-  settingsEl.innerHTML = hub.connectors.map((connector) => {
-    const placeholder = connector.type === 'microsoft-graph'
-      ? 'Will require backend OAuth flow and secure token storage.'
-      : 'Local connector, no OAuth required.';
-    return `<div class="setting"><label>${connector.label}</label><input value="${connector.status} • ${connector.syncMode}" readonly /><textarea readonly>${connector.notes || ''}\n\n${placeholder}</textarea><div class="actions"><span class="button">${connector.enabled ? 'Enabled' : 'Disabled'}</span><span class="button">${connector.type}</span></div></div>`;
-  }).join('');
+  renderSettings(hub.connectors);
+}
+
+async function loadBackendStatus() {
+  try {
+    const res = await fetch(`${BACKEND_BASE}/api/connectors/microsoft/status`);
+    if (!res.ok) throw new Error(`Backend status ${res.status}`);
+    backendStatus = await res.json();
+    if (hub) renderSettings(hub.connectors);
+  } catch {
+    backendStatus = null;
+    if (hub) renderSettings(hub.connectors);
+  }
 }
 
 canvas.addEventListener('mousedown', (e) => {
@@ -218,6 +242,7 @@ fetch('./hub-data.json')
   .then((data) => {
     hub = data;
     renderHub();
+    loadBackendStatus();
   })
   .catch((err) => {
     hubstats.textContent = `Could not load hub summary: ${err.message}`;
