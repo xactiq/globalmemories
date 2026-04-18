@@ -3,8 +3,10 @@ const ctx = canvas.getContext('2d');
 const details = document.getElementById('details');
 const hubstats = document.getElementById('hubstats');
 const connectorsEl = document.getElementById('connectors');
+const sourcesEl = document.getElementById('sources');
 const memoriesEl = document.getElementById('memories');
 const topchips = document.getElementById('topchips');
+const tabs = [...document.querySelectorAll('.tab')];
 
 let width = 0;
 let height = 0;
@@ -124,6 +126,13 @@ function draw() {
   requestAnimationFrame(draw);
 }
 
+function switchTab(name) {
+  tabs.forEach((tab) => tab.classList.toggle('active', tab.dataset.tab === name));
+  ['connectors', 'sources', 'memories'].forEach((section) => {
+    document.getElementById(`tab-${section}`).classList.toggle('hidden', section !== name);
+  });
+}
+
 function renderHub() {
   if (!hub) return;
   const active = hub.connectors.filter((c) => c.enabled).length;
@@ -138,11 +147,16 @@ function renderHub() {
 
   connectorsEl.innerHTML = hub.connectors.map((connector) => {
     const tone = connector.status === 'active' ? 'ok' : connector.status === 'planned' ? 'planned' : 'warning';
-    return `<div class="card"><strong>${connector.label}</strong><div class="muted ${tone}">${connector.status} • ${connector.syncMode}</div><div class="muted">${connector.notes || ''}</div></div>`;
+    const action = connector.enabled ? 'Connected' : 'Planned';
+    return `<div class="card"><strong>${connector.label}</strong><div class="muted ${tone}">${connector.status} • ${connector.syncMode}</div><div class="muted">${connector.notes || ''}</div><div class="actions"><span class="button">${action}</span><span class="button">${connector.type}</span></div></div>`;
   }).join('');
 
-  memoriesEl.innerHTML = hub.store.memories.slice(0, 6).map((memory) => {
-    return `<div class="card"><strong>${memory.title}</strong><div class="muted">${memory.timestamp} • ${memory.platform}</div><div class="muted">${memory.summary}</div></div>`;
+  sourcesEl.innerHTML = hub.store.sources.slice(0, 12).map((source) => {
+    return `<div class="card"><strong>${source.path}</strong><div class="muted">${source.kind} • ${source.platform}</div><div class="actions"><span class="button">${source.id}</span></div></div>`;
+  }).join('');
+
+  memoriesEl.innerHTML = hub.store.memories.slice(0, 8).map((memory) => {
+    return `<div class="card"><strong>${memory.title}</strong><div class="muted">${memory.timestamp} • ${memory.platform}</div><div class="muted">${memory.summary}</div><div class="actions"><span class="button">${memory.sourceId}</span></div></div>`;
   }).join('');
 }
 
@@ -172,8 +186,11 @@ canvas.addEventListener('click', (e) => {
   if (hit) details.textContent = `${hit.label} (${hit.group})${hit.file ? ` • ${hit.file}` : ''}`;
 });
 
+tabs.forEach((tab) => tab.addEventListener('click', () => switchTab(tab.dataset.tab)));
+
 window.addEventListener('resize', resize);
 resize();
+switchTab('connectors');
 
 fetch('./graph.json')
   .then((r) => r.json())

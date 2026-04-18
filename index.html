@@ -21,10 +21,16 @@
       .dot { width: 10px; height: 10px; border-radius: 999px; display: inline-block; }
       .chip { padding: 4px 8px; border-radius: 999px; background: rgba(255,255,255,.06); color: #dbeafe; }
       .sidebar {
-        position: absolute; top: 16px; right: 16px; width: min(380px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto;
+        position: absolute; top: 16px; right: 16px; width: min(420px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto;
         background: rgba(7,17,31,.84); border: 1px solid rgba(255,255,255,.12);
         border-radius: 14px; padding: 14px 16px; backdrop-filter: blur(10px);
       }
+      .tabs { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+      .tab {
+        border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.04); color: #dbeafe;
+        border-radius: 999px; padding: 6px 10px; font-size: 12px; cursor: pointer;
+      }
+      .tab.active { background: rgba(96,165,250,.18); border-color: rgba(96,165,250,.4); }
       .section { margin-top: 16px; }
       .section h2 { font-size: 14px; margin: 0 0 8px; color: #e8f0ff; }
       .list { display: grid; gap: 8px; }
@@ -37,6 +43,12 @@
       .ok { color: #86efac; }
       .planned { color: #fcd34d; }
       .warning { color: #fca5a5; }
+      .actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+      .button {
+        border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.04); color: #dbeafe;
+        border-radius: 10px; padding: 6px 10px; font-size: 12px;
+      }
+      .hidden { display: none; }
     </style>
   </head>
   <body>
@@ -56,11 +68,23 @@
         <div class="chips" id="topchips"></div>
       </div>
       <div class="sidebar">
-        <div class="section">
-          <h2>Connectors</h2>
+        <div class="tabs">
+          <button class="tab active" data-tab="connectors">Connectors</button>
+          <button class="tab" data-tab="sources">Sources</button>
+          <button class="tab" data-tab="memories">Memories</button>
+        </div>
+
+        <div class="section" id="tab-connectors">
+          <h2>Connector management</h2>
           <div class="list" id="connectors"></div>
         </div>
-        <div class="section">
+
+        <div class="section hidden" id="tab-sources">
+          <h2>Source explorer</h2>
+          <div class="list" id="sources"></div>
+        </div>
+
+        <div class="section hidden" id="tab-memories">
           <h2>Recent memories</h2>
           <div class="list" id="memories"></div>
         </div>
