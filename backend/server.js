@@ -69,17 +69,20 @@ function getMicrosoftStatus() {
   const tokenStore = loadTokenStore();
   const syncStore = loadSyncStore();
   const connected = Boolean(tokenStore?.access_token || tokenStore?.refresh_token);
+  const partial = Boolean(syncStore?.partial);
   return {
     connected,
     configured,
+    partial,
     accountLabel: connected ? 'Microsoft account connected locally' : configured ? 'Microsoft app configured locally' : 'Microsoft app not configured',
     lastSyncAt: syncStore?.synced_at || tokenStore?.received_at || null,
     connectors: {
-      outlook: connected ? 'connected' : configured ? 'ready-for-auth' : 'needs-config',
-      onedrive: connected ? 'connected' : configured ? 'ready-for-auth' : 'needs-config'
+      outlook: connected ? (partial && !syncStore?.mail ? 'partial' : 'connected') : configured ? 'ready-for-auth' : 'needs-config',
+      onedrive: connected ? (syncStore?.driveError ? 'unavailable' : 'connected') : configured ? 'ready-for-auth' : 'needs-config'
     },
     profile: syncStore?.profile || null,
-    syncSummary: syncStore?.summary || null
+    syncSummary: syncStore?.summary || null,
+    issues: syncStore?.issues || []
   };
 }
 
@@ -90,7 +93,8 @@ function buildMicrosoftAuthUrl() {
     response_type: 'code',
     redirect_uri: redirectUri,
     response_mode: 'query',
-    scope: scopes.join(' ')
+    scope: scopes.join(' '),
+    prompt: 'select_account'
   });
   return `${authBase}?${params.toString()}`;
 }
@@ -240,6 +244,14 @@ function summarizeDrive(items = []) {
   }));
 }
 
+function issue(name, result) {
+  return {
+    endpoint: name,
+    status: result.status,
+    body: result.json || result.raw || null
+  };
+}
+
 const server = http.createServer(async (req, res) => {
   if (!req.url) return sendJson(res, 400, { error: 'Missing URL' });
   if (req.method === 'OPTIONS') return sendJson(res, 200, { ok: true });
@@ -327,48 +339,53 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 500, { ok: false, message: 'No access token available after refresh.' });
       }
 
-      const [me, messages, events, drive] = await Promise.all([
-        graphGet('/v1.0/me', accessToken),
-        graphGet('/v1.0/me/messages?$top=10&$select=id,subject,receivedDateTime,webLink,from', accessToken),
-        graphGet('/v1.0/me/events?$top=10&$select=id,subject,start,end,webLink&$orderby=start/dateTime', accessToken),
-        graphGet('/v1.0/me/drive/root/children?$top=20&$select=id,name,webUrl,lastModifiedDateTime,folder,file', accessToken)
+      const results = await Promise.all([
+        graphGet('/v1.0/me', accessToken).then((r) => ['profile', r]),
+        graphGet('/v1.0/me/messages?$top=10&$select=id,subject,receivedDateTime,webLink,from', accessToken).then((r) => ['mail', r]),
+        graphGet('/v1.0/me/events?$top=10&$select=id,subject,start,end,webLink&$orderby=start/dateTime', accessToken).then((r) => ['calendar', r]),
+        graphGet('/v1.0/me/drive/root/children?$top=20&$select=id,name,webUrl,lastModifiedDateTime,folder,file', accessToken).then((r) => ['drive', r])
       ]);
 
-      const failures = [me, messages, events, drive].filter((r) => r.status >= 400 || !r.json);
-      if (failures.length) {
-        return sendJson(res, 502, {
-          ok: false,
-          message: 'One or more Microsoft Graph calls failed.',
-          failures: failures.map((r) => ({
-            status: r.status,
-            body: r.json || r.raw || null
-          }))
-        });
-      }
+      const map = Object.fromEntries(results);
+      const issues = [];
+
+      if (map.profile.status >= 400 || !map.profile.json) issues.push(issue('profile', map.profile));
+      if (map.mail.status >= 400 || !map.mail.json) issues.push(issue('mail', map.mail));
+      if (map.calendar.status >= 400 || !map.calendar.json) issues.push(issue('calendar', map.calendar));
+      if (map.drive.status >= 400 || !map.drive.json) issues.push(issue('drive', map.drive));
+
+      const profileJson = map.profile.json || {};
+      const mailJson = map.mail.json || { value: [] };
+      const calendarJson = map.calendar.json || { value: [] };
+      const driveJson = map.drive.json || { value: [] };
 
       const snapshot = {
         synced_at: new Date().toISOString(),
-        profile: {
-          displayName: me.json.displayName || null,
-          userPrincipalName: me.json.userPrincipalName || null,
-          mail: me.json.mail || null,
-          id: me.json.id || null
-        },
+        partial: issues.length > 0,
+        issues,
+        profile: map.profile.json ? {
+          displayName: profileJson.displayName || null,
+          userPrincipalName: profileJson.userPrincipalName || null,
+          mail: profileJson.mail || null,
+          id: profileJson.id || null
+        } : null,
         summary: {
-          recentMessages: (messages.json.value || []).length,
-          upcomingEvents: (events.json.value || []).length,
-          driveItems: (drive.json.value || []).length
+          recentMessages: (mailJson.value || []).length,
+          upcomingEvents: (calendarJson.value || []).length,
+          driveItems: (driveJson.value || []).length
         },
-        mail: summarizeMail(messages.json.value),
-        calendar: summarizeEvents(events.json.value),
-        drive: summarizeDrive(drive.json.value)
+        mail: map.mail.json ? summarizeMail(mailJson.value) : null,
+        calendar: map.calendar.json ? summarizeEvents(calendarJson.value) : null,
+        drive: map.drive.json ? summarizeDrive(driveJson.value) : null,
+        driveError: issues.find((x) => x.endpoint === 'drive') || null
       };
 
       saveSyncStore(snapshot);
 
-      return sendJson(res, 200, {
+      return sendJson(res, issues.length ? 207 : 200, {
         ok: true,
-        message: 'Microsoft sync completed.',
+        partial: issues.length > 0,
+        message: issues.length ? 'Microsoft sync completed with partial results.' : 'Microsoft sync completed.',
         snapshot
       });
     } catch (err) {
