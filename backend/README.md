@@ -37,5 +37,14 @@ MICROSOFT_REDIRECT_URI=http://localhost:8787/api/connectors/microsoft/callback
 ## Current state
 
 - status endpoint returns live configured/unconfigured state from `.env`
-- connect endpoint now returns a real Microsoft OAuth start URL when config is present
-- callback and sync are still intentional stubs for the next implementation step
+- connect endpoint returns a real Microsoft OAuth start URL when config is present
+- callback endpoint now exchanges the authorization code for tokens and stores them locally in `.microsoft-tokens.json`
+- sync endpoint still remains a stub until Outlook/OneDrive ingestion is implemented
+
+## Local token storage
+
+The current prototype stores Microsoft tokens locally in:
+
+- `.microsoft-tokens.json`
+
+This file should remain local and never be committed.
