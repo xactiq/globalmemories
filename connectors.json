@@ -19,22 +19,49 @@
       "notes": "Reads graph-friendly notes from obsidian-vault/."
     },
     {
+      "id": "google-gmail",
+      "label": "Google Workspace Gmail",
+      "type": "google-workspace",
+      "enabled": false,
+      "status": "planned",
+      "syncMode": "oauth",
+      "notes": "Planned primary connector for Gmail message sync through Google Workspace."
+    },
+    {
+      "id": "google-calendar",
+      "label": "Google Workspace Calendar",
+      "type": "google-workspace",
+      "enabled": false,
+      "status": "planned",
+      "syncMode": "oauth",
+      "notes": "Planned primary connector for Google Calendar events through Google Workspace."
+    },
+    {
+      "id": "google-drive",
+      "label": "Google Workspace Drive",
+      "type": "google-workspace",
+      "enabled": false,
+      "status": "planned",
+      "syncMode": "oauth",
+      "notes": "Planned primary connector for Google Drive files and folders through Google Workspace."
+    },
+    {
       "id": "outlook",
       "label": "Microsoft Outlook",
       "type": "microsoft-graph",
       "enabled": false,
-      "status": "planned",
+      "status": "experimental",
       "syncMode": "oauth",
-      "notes": "Planned connector for Outlook mail and calendar through Microsoft Graph."
+      "notes": "Experimental connector. Identity works, but tenant/mailbox access varies by account and license."
     },
     {
       "id": "onedrive",
       "label": "Microsoft OneDrive",
       "type": "microsoft-graph",
       "enabled": false,
-      "status": "planned",
+      "status": "experimental",
       "syncMode": "oauth",
-      "notes": "Planned connector for OneDrive files and folders through Microsoft Graph."
+      "notes": "Experimental connector. Some accounts may not have SharePoint/OneDrive licensing."
     }
   ]
 }
