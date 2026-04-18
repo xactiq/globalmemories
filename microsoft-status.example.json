@@ -1,0 +1,19 @@
+{
+  "status": {
+    "connected": false,
+    "accountLabel": "Not connected",
+    "lastSyncAt": null,
+    "connectors": {
+      "outlook": "planned",
+      "onedrive": "planned"
+    }
+  },
+  "connect": {
+    "url": "/api/connectors/microsoft/connect",
+    "method": "POST"
+  },
+  "sync": {
+    "url": "/api/connectors/microsoft/sync",
+    "method": "POST"
+  }
+}

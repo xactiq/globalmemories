@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Microsoft Connector API Contract",
+  "type": "object",
+  "properties": {
+    "status": {
+      "type": "object",
+      "properties": {
+        "connected": { "type": "boolean" },
+        "accountLabel": { "type": "string" },
+        "lastSyncAt": { "type": ["string", "null"] },
+        "connectors": {
+          "type": "object",
+          "properties": {
+            "outlook": { "type": "string" },
+            "onedrive": { "type": "string" }
+          }
+        }
+      }
+    },
+    "connect": {
+      "type": "object",
+      "properties": {
+        "url": { "type": "string" },
+        "method": { "type": "string" }
+      }
+    },
+    "sync": {
+      "type": "object",
+      "properties": {
+        "url": { "type": "string" },
+        "method": { "type": "string" }
+      }
+    }
+  }
+}
