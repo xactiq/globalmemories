@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Memory Hub Connectors",
+  "type": "object",
+  "required": ["connectors"],
+  "properties": {
+    "connectors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "label", "type", "enabled", "status", "syncMode"],
+        "properties": {
+          "id": { "type": "string" },
+          "label": { "type": "string" },
+          "type": { "type": "string" },
+          "enabled": { "type": "boolean" },
+          "status": { "type": "string" },
+          "syncMode": { "type": "string" },
+          "notes": { "type": "string" }
+        }
+      }
+    }
+  }
+}

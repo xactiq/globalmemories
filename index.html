@@ -24,8 +24,8 @@
   <body>
     <div id="app">
       <div class="panel">
-        <h1>Memory Globe</h1>
-        <p>A lightweight local prototype for storing and browsing assistant memory as a globe-style graph.</p>
+        <h1>Memory Hub</h1>
+        <p>A prototype hub for storing and browsing assistant memory across connected sources.</p>
         <p>Drag to rotate. Scroll to zoom. Click near a node to inspect it.</p>
         <div class="legend">
           <span><i class="dot" style="background:#7dd3fc"></i> memory</span>
@@ -34,11 +34,12 @@
           <span><i class="dot" style="background:#fcd34d"></i> system</span>
         </div>
         <p id="details">Loading graph…</p>
+        <p id="hubstats">Loading connector hub…</p>
       </div>
       <canvas id="scene"></canvas>
     </div>
-    <script src="./public/config.js"></script>
-    <script type="module" src="./src/auth-guard.js"></script>
-    <script type="module" src="./src/main.js"></script>
+    <script src="./config.js"></script>
+    <script type="module" src="./auth-guard.js"></script>
+    <script type="module" src="./main.js"></script>
   </body>
 </html>

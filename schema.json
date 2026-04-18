@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Memory Globe Store",
+  "type": "object",
+  "required": ["entities", "memories", "relationships", "sources", "conversations"],
+  "properties": {
+    "entities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "label"],
+        "properties": {
+          "id": { "type": "string" },
+          "type": { "type": "string" },
+          "label": { "type": "string" },
+          "aliases": { "type": "array", "items": { "type": "string" } },
+          "meta": { "type": "object" }
+        }
+      }
+    },
+    "memories": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "sourceId", "timestamp", "summary"],
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "sourceId": { "type": "string" },
+          "timestamp": { "type": "string" },
+          "platform": { "type": "string" },
+          "summary": { "type": "string" },
+          "excerpt": { "type": "string" },
+          "entityIds": { "type": "array", "items": { "type": "string" } },
+          "topicIds": { "type": "array", "items": { "type": "string" } },
+          "conversationId": { "type": "string" },
+          "rawPath": { "type": "string" }
+        }
+      }
+    },
+    "relationships": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["source", "target", "kind"],
+        "properties": {
+          "source": { "type": "string" },
+          "target": { "type": "string" },
+          "kind": { "type": "string" },
+          "weight": { "type": "number" }
+        }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "path", "kind"],
+        "properties": {
+          "id": { "type": "string" },
+          "path": { "type": "string" },
+          "kind": { "type": "string" },
+          "platform": { "type": "string" }
+        }
+      }
+    },
+    "conversations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "label"],
+        "properties": {
+          "id": { "type": "string" },
+          "label": { "type": "string" },
+          "platform": { "type": "string" },
+          "participantIds": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    }
+  }
+}

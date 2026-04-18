@@ -1,6 +1,7 @@
 const canvas = document.getElementById('scene');
 const ctx = canvas.getContext('2d');
 const details = document.getElementById('details');
+const hubstats = document.getElementById('hubstats');
 
 let width = 0;
 let height = 0;
@@ -146,7 +147,7 @@ canvas.addEventListener('click', (e) => {
 window.addEventListener('resize', resize);
 resize();
 
-fetch('./public/graph.json')
+fetch('./graph.json')
   .then((r) => r.json())
   .then((data) => {
     graph = {
@@ -157,6 +158,17 @@ fetch('./public/graph.json')
   })
   .catch((err) => {
     details.textContent = `Could not load graph: ${err.message}`;
+  });
+
+fetch('./hub-data.json')
+  .then((r) => r.json())
+  .then((hub) => {
+    const active = hub.connectors.filter((c) => c.enabled).length;
+    const planned = hub.connectors.filter((c) => c.status === 'planned').length;
+    hubstats.textContent = `Hub: ${hub.counts.memories} memories, ${hub.counts.entities} entities, ${active} active connectors, ${planned} planned connectors.`;
+  })
+  .catch((err) => {
+    hubstats.textContent = `Could not load hub summary: ${err.message}`;
   });
 
 draw();

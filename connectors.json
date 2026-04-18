@@ -1,0 +1,40 @@
+{
+  "connectors": [
+    {
+      "id": "workspace-memory",
+      "label": "Workspace Memory Files",
+      "type": "filesystem",
+      "enabled": true,
+      "status": "active",
+      "syncMode": "local",
+      "notes": "Ingests memory/*.md and workspace-local memory sources."
+    },
+    {
+      "id": "obsidian-vault",
+      "label": "Obsidian Vault",
+      "type": "filesystem",
+      "enabled": true,
+      "status": "active",
+      "syncMode": "local",
+      "notes": "Reads graph-friendly notes from obsidian-vault/."
+    },
+    {
+      "id": "outlook",
+      "label": "Microsoft Outlook",
+      "type": "microsoft-graph",
+      "enabled": false,
+      "status": "planned",
+      "syncMode": "oauth",
+      "notes": "Planned connector for Outlook mail and calendar through Microsoft Graph."
+    },
+    {
+      "id": "onedrive",
+      "label": "Microsoft OneDrive",
+      "type": "microsoft-graph",
+      "enabled": false,
+      "status": "planned",
+      "syncMode": "oauth",
+      "notes": "Planned connector for OneDrive files and folders through Microsoft Graph."
+    }
+  ]
+}

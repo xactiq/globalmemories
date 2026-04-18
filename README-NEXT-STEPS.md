@@ -4,17 +4,11 @@
 
 A temporary passphrase gate has been added for the prototype deployment.
 
-Default temporary passphrase:
+Current passphrase:
 
-- `change-me-memory-globe`
+- `151cr394`
 
-Change it before public deployment by running:
-
-```bash
-python3 src/set-passhash.py "your-new-passphrase"
-```
-
-Then regenerate data if needed and redeploy.
+Change it before wider use by updating `config.js` with a new SHA-256 hash.
 
 ## Important
 
