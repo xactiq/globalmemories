@@ -89,6 +89,10 @@ function loadGoogleSyncStore() {
   return loadJson(googleSyncStorePath);
 }
 
+function saveGoogleSyncStore(data) {
+  saveJson(googleSyncStorePath, data);
+}
+
 function getMicrosoftStatus() {
   const configured = Boolean(tenantId && clientId && clientSecret && redirectUri);
   const tokenStore = loadTokenStore();
@@ -211,15 +215,17 @@ function postForm(url, data) {
   });
 }
 
-function graphGet(path, accessToken) {
+function getJson(url, accessToken, extraHeaders = {}) {
   return new Promise((resolve, reject) => {
+    const parsed = new URL(url);
     const req = https.request({
-      hostname: 'graph.microsoft.com',
-      path,
+      hostname: parsed.hostname,
+      path: parsed.pathname + parsed.search,
       method: 'GET',
       headers: {
-        Authorization: `Bearer ${accessToken}`,
-        Accept: 'application/json'
+        Accept: 'application/json',
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        ...extraHeaders
       }
     }, (res) => {
       let raw = '';
@@ -235,6 +241,10 @@ function graphGet(path, accessToken) {
     req.on('error', reject);
     req.end();
   });
+}
+
+function graphGet(path, accessToken) {
+  return getJson(`https://graph.microsoft.com${path}`, accessToken);
 }
 
 async function refreshAccessTokenIfNeeded() {
@@ -264,12 +274,66 @@ async function refreshAccessTokenIfNeeded() {
   return refreshed;
 }
 
+async function refreshGoogleAccessTokenIfNeeded() {
+  const tokenStore = loadGoogleTokenStore();
+  if (!tokenStore?.refresh_token) return tokenStore;
+  const receivedAt = tokenStore.received_at ? Date.parse(tokenStore.received_at) : 0;
+  const expiresInMs = (tokenStore.expires_in || 0) * 1000;
+  const stillValid = tokenStore.access_token && receivedAt && Date.now() < receivedAt + expiresInMs - 60000;
+  if (stillValid) return tokenStore;
+
+  const tokenResponse = await postForm('https://oauth2.googleapis.com/token', {
+    client_id: googleClientId,
+    client_secret: googleClientSecret,
+    refresh_token: tokenStore.refresh_token,
+    grant_type: 'refresh_token'
+  });
+  if (tokenResponse.status >= 400) throw new Error(`Google refresh failed: ${JSON.stringify(tokenResponse.json || tokenResponse.raw)}`);
+  if (!tokenResponse.json) throw new Error('Google refresh returned a non-JSON response.');
+  const refreshed = {
+    ...tokenStore,
+    ...tokenResponse.json,
+    refresh_token: tokenResponse.json.refresh_token || tokenStore.refresh_token,
+    received_at: new Date().toISOString()
+  };
+  saveGoogleTokenStore(refreshed);
+  return refreshed;
+}
+
 function issue(name, result) {
   return {
     endpoint: name,
     status: result.status,
     body: result.json || result.raw || null
   };
+}
+
+function summarizeGmail(items = []) {
+  return items.map((item) => ({
+    id: item.id,
+    threadId: item.threadId || null,
+    snippet: item.snippet || ''
+  }));
+}
+
+function summarizeGoogleEvents(items = []) {
+  return items.map((item) => ({
+    id: item.id,
+    summary: item.summary || '(no title)',
+    start: item.start?.dateTime || item.start?.date || null,
+    end: item.end?.dateTime || item.end?.date || null,
+    htmlLink: item.htmlLink || null
+  }));
+}
+
+function summarizeGoogleDrive(items = []) {
+  return items.map((item) => ({
+    id: item.id,
+    name: item.name || '(unnamed)',
+    mimeType: item.mimeType || null,
+    modifiedTime: item.modifiedTime || null,
+    webViewLink: item.webViewLink || null
+  }));
 }
 
 const server = http.createServer(async (req, res) => {
@@ -296,17 +360,13 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method === 'POST' && req.url === '/api/connectors/microsoft/connect') {
     const status = getMicrosoftStatus();
-    if (!status.configured) {
-      return sendJson(res, 400, { ok: false, message: 'Microsoft connector is not fully configured. Check backend .env values.' });
-    }
+    if (!status.configured) return sendJson(res, 400, { ok: false, message: 'Microsoft connector is not fully configured. Check backend .env values.' });
     return sendJson(res, 200, { ok: true, authUrl: buildMicrosoftAuthUrl(), message: 'Open the authUrl in a browser to begin Microsoft sign-in.' });
   }
 
   if (req.method === 'POST' && req.url === '/api/connectors/google/connect') {
     const status = getGoogleStatus();
-    if (!status.configured) {
-      return sendJson(res, 400, { ok: false, message: 'Google connector is not fully configured. Check backend .env values.' });
-    }
+    if (!status.configured) return sendJson(res, 400, { ok: false, message: 'Google connector is not fully configured. Check backend .env values.' });
     return sendJson(res, 200, { ok: true, authUrl: buildGoogleAuthUrl(), message: 'Open the authUrl in a browser to begin Google sign-in.' });
   }
 
@@ -325,19 +385,9 @@ const server = http.createServer(async (req, res) => {
         redirect_uri: googleRedirectUri,
         grant_type: 'authorization_code'
       });
-
-      if (tokenResponse.status >= 400) {
-        return sendHtml(res, 500, `<h1>Google token exchange failed</h1><pre>${JSON.stringify(tokenResponse.json || tokenResponse.raw, null, 2)}</pre>`);
-      }
-      if (!tokenResponse.json) {
-        return sendHtml(res, 500, '<h1>Google token exchange failed</h1><p>Google returned a non-JSON response.</p>');
-      }
-
-      saveGoogleTokenStore({
-        ...tokenResponse.json,
-        received_at: new Date().toISOString()
-      });
-
+      if (tokenResponse.status >= 400) return sendHtml(res, 500, `<h1>Google token exchange failed</h1><pre>${JSON.stringify(tokenResponse.json || tokenResponse.raw, null, 2)}</pre>`);
+      if (!tokenResponse.json) return sendHtml(res, 500, '<h1>Google token exchange failed</h1><p>Google returned a non-JSON response.</p>');
+      saveGoogleTokenStore({ ...tokenResponse.json, received_at: new Date().toISOString() });
       return sendHtml(res, 200, '<h1>Google Workspace connected</h1><p>You can return to Memory Hub now.</p>');
     } catch (err) {
       return sendHtml(res, 500, `<h1>Google callback error</h1><pre>${String(err)}</pre>`);
@@ -371,7 +421,63 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (req.method === 'POST' && req.url === '/api/connectors/google/sync') {
-    return sendJson(res, 501, { ok: false, message: 'Google sync is not implemented yet. OAuth connect/callback is ready next for testing.' });
+    const status = getGoogleStatus();
+    if (!status.connected) return sendJson(res, 400, { ok: false, message: 'Google is not connected yet. Complete the auth flow first.' });
+
+    try {
+      const tokenStore = await refreshGoogleAccessTokenIfNeeded();
+      const accessToken = tokenStore?.access_token;
+      if (!accessToken) return sendJson(res, 500, { ok: false, message: 'No Google access token available after refresh.' });
+
+      const results = await Promise.all([
+        getJson('https://openidconnect.googleapis.com/v1/userinfo', accessToken).then((r) => ['profile', r]),
+        getJson('https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=10', accessToken).then((r) => ['gmail', r]),
+        getJson('https://www.googleapis.com/calendar/v3/calendars/primary/events?maxResults=10&singleEvents=true&orderBy=startTime&timeMin=' + encodeURIComponent(new Date().toISOString()), accessToken).then((r) => ['calendar', r]),
+        getJson('https://www.googleapis.com/drive/v3/files?pageSize=20&fields=files(id,name,mimeType,modifiedTime,webViewLink)', accessToken).then((r) => ['drive', r])
+      ]);
+
+      const map = Object.fromEntries(results);
+      const issues = [];
+      if (map.profile.status >= 400 || !map.profile.json) issues.push(issue('profile', map.profile));
+      if (map.gmail.status >= 400 || !map.gmail.json) issues.push(issue('gmail', map.gmail));
+      if (map.calendar.status >= 400 || !map.calendar.json) issues.push(issue('calendar', map.calendar));
+      if (map.drive.status >= 400 || !map.drive.json) issues.push(issue('drive', map.drive));
+
+      const profileJson = map.profile.json || {};
+      const gmailJson = map.gmail.json || { messages: [] };
+      const calendarJson = map.calendar.json || { items: [] };
+      const driveJson = map.drive.json || { files: [] };
+
+      const snapshot = {
+        synced_at: new Date().toISOString(),
+        issues,
+        profile: map.profile.json ? {
+          email: profileJson.email || null,
+          name: profileJson.name || null,
+          picture: profileJson.picture || null,
+          sub: profileJson.sub || null
+        } : null,
+        summary: {
+          gmailMessages: (gmailJson.messages || []).length,
+          upcomingEvents: (calendarJson.items || []).length,
+          driveItems: (driveJson.files || []).length
+        },
+        gmail: map.gmail.json ? summarizeGmail(gmailJson.messages) : null,
+        calendar: map.calendar.json ? summarizeGoogleEvents(calendarJson.items) : null,
+        drive: map.drive.json ? summarizeGoogleDrive(driveJson.files) : null
+      };
+
+      saveGoogleSyncStore(snapshot);
+
+      return sendJson(res, issues.length ? 207 : 200, {
+        ok: true,
+        partial: issues.length > 0,
+        message: issues.length ? 'Google sync completed with partial results.' : 'Google sync completed.',
+        snapshot
+      });
+    } catch (err) {
+      return sendJson(res, 500, { ok: false, message: 'Google sync failed.', error: String(err) });
+    }
   }
 
   if (req.method === 'POST' && req.url === '/api/connectors/microsoft/sync') {
