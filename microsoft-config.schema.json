@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Microsoft Graph Connector Config",
+  "type": "object",
+  "required": ["tenantId", "clientId", "scopes", "connectors"],
+  "properties": {
+    "tenantId": { "type": "string" },
+    "clientId": { "type": "string" },
+    "scopes": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "connectors": {
+      "type": "object",
+      "properties": {
+        "outlook": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "mail": { "type": "boolean" },
+            "calendar": { "type": "boolean" }
+          }
+        },
+        "onedrive": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "files": { "type": "boolean" },
+            "folders": { "type": "boolean" }
+          }
+        }
+      }
+    }
+  }
+}

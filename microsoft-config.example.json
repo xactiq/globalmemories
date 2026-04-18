@@ -1,0 +1,25 @@
+{
+  "tenantId": "your-tenant-id",
+  "clientId": "your-application-client-id",
+  "scopes": [
+    "offline_access",
+    "openid",
+    "profile",
+    "User.Read",
+    "Mail.Read",
+    "Calendars.Read",
+    "Files.Read.All"
+  ],
+  "connectors": {
+    "outlook": {
+      "enabled": true,
+      "mail": true,
+      "calendar": true
+    },
+    "onedrive": {
+      "enabled": true,
+      "files": true,
+      "folders": true
+    }
+  }
+}
