@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Memory Globe</title>
+    <style>
+      :root { color-scheme: dark; }
+      body { margin: 0; font-family: Inter, system-ui, sans-serif; background: #07111f; color: #e8f0ff; }
+      #app { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+      canvas { display: block; width: 100%; height: 100%; }
+      .panel {
+        position: absolute; top: 16px; left: 16px; max-width: 340px;
+        background: rgba(7,17,31,.8); border: 1px solid rgba(255,255,255,.12);
+        border-radius: 14px; padding: 14px 16px; backdrop-filter: blur(10px);
+      }
+      .panel h1 { margin: 0 0 8px; font-size: 18px; }
+      .panel p { margin: 0 0 8px; font-size: 14px; line-height: 1.4; color: #bfd0ee; }
+      .legend { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; font-size: 12px; }
+      .legend span { display: inline-flex; align-items: center; gap: 6px; }
+      .dot { width: 10px; height: 10px; border-radius: 999px; display: inline-block; }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <div class="panel">
+        <h1>Memory Globe</h1>
+        <p>A lightweight local prototype for storing and browsing assistant memory as a globe-style graph.</p>
+        <p>Drag to rotate. Scroll to zoom. Click near a node to inspect it.</p>
+        <div class="legend">
+          <span><i class="dot" style="background:#7dd3fc"></i> memory</span>
+          <span><i class="dot" style="background:#f9a8d4"></i> person</span>
+          <span><i class="dot" style="background:#86efac"></i> topic</span>
+          <span><i class="dot" style="background:#fcd34d"></i> system</span>
+        </div>
+        <p id="details">Loading graph…</p>
+      </div>
+      <canvas id="scene"></canvas>
+    </div>
+    <script src="./public/config.js"></script>
+    <script type="module" src="./src/auth-guard.js"></script>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>

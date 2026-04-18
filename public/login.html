@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Memory Globe Login</title>
+    <style>
+      :root { color-scheme: dark; }
+      body {
+        margin: 0; min-height: 100vh; display: grid; place-items: center;
+        background: radial-gradient(circle at top, #13233f 0%, #07111f 60%, #030712 100%);
+        font-family: Inter, system-ui, sans-serif; color: #e8f0ff;
+      }
+      .card {
+        width: min(420px, calc(100vw - 32px));
+        background: rgba(7,17,31,.82); border: 1px solid rgba(255,255,255,.12);
+        border-radius: 18px; padding: 22px; box-shadow: 0 20px 60px rgba(0,0,0,.35);
+      }
+      h1 { margin: 0 0 8px; font-size: 24px; }
+      p { color: #bfd0ee; line-height: 1.45; }
+      input {
+        width: 100%; box-sizing: border-box; padding: 12px 14px; border-radius: 12px;
+        border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.06); color: white;
+        margin: 12px 0;
+      }
+      button {
+        width: 100%; padding: 12px 14px; border: 0; border-radius: 12px;
+        background: linear-gradient(135deg, #60a5fa, #818cf8); color: white; font-weight: 600; cursor: pointer;
+      }
+      .error { color: #fca5a5; min-height: 20px; margin-top: 10px; }
+      .small { font-size: 12px; color: #8fa7ca; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>Memory Globe</h1>
+      <p>Enter your passphrase to open the private memory graph.</p>
+      <input id="passphrase" type="password" placeholder="Passphrase" autofocus />
+      <button id="submit">Open</button>
+      <div class="error" id="error"></div>
+      <div class="small">This is a lightweight front-door gate for the prototype. Real auth should come next.</div>
+    </div>
+    <script type="module" src="./auth.js"></script>
+  </body>
+</html>
