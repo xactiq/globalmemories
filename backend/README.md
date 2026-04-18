@@ -38,13 +38,22 @@ MICROSOFT_REDIRECT_URI=http://localhost:8787/api/connectors/microsoft/callback
 
 - status endpoint returns live configured/unconfigured state from `.env`
 - connect endpoint returns a real Microsoft OAuth start URL when config is present
-- callback endpoint now exchanges the authorization code for tokens and stores them locally in `.microsoft-tokens.json`
-- sync endpoint still remains a stub until Outlook/OneDrive ingestion is implemented
+- callback endpoint exchanges the authorization code for tokens and stores them locally in `.microsoft-tokens.json`
+- sync endpoint now pulls a small local snapshot from Microsoft Graph:
+  - profile (`/me`)
+  - recent mail (`/me/messages`)
+  - calendar events (`/me/events`)
+  - OneDrive root items (`/me/drive/root/children`)
 
-## Local token storage
+## Local storage
 
-The current prototype stores Microsoft tokens locally in:
+The current prototype stores Microsoft data locally in:
 
 - `.microsoft-tokens.json`
+- `.microsoft-sync.json`
 
-This file should remain local and never be committed.
+These files should remain local and never be committed.
+
+## Notes
+
+The sync response is currently a lightweight summary snapshot for local testing. Wiring it into the Memory Hub normalized store is the next step.

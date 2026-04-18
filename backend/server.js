@@ -23,6 +23,7 @@ const clientId = process.env.MICROSOFT_CLIENT_ID || '';
 const clientSecret = process.env.MICROSOFT_CLIENT_SECRET || '';
 const redirectUri = process.env.MICROSOFT_REDIRECT_URI || '';
 const tokenStorePath = join(process.cwd(), '.microsoft-tokens.json');
+const syncStorePath = join(process.cwd(), '.microsoft-sync.json');
 const scopes = [
   'offline_access',
   'openid',
@@ -34,32 +35,51 @@ const scopes = [
   'Files.Read.All'
 ];
 
-function loadTokenStore() {
-  if (!existsSync(tokenStorePath)) return null;
+function loadJson(path) {
+  if (!existsSync(path)) return null;
   try {
-    return JSON.parse(readFileSync(tokenStorePath, 'utf8'));
+    return JSON.parse(readFileSync(path, 'utf8'));
   } catch {
     return null;
   }
 }
 
+function saveJson(path, data) {
+  writeFileSync(path, JSON.stringify(data, null, 2));
+}
+
+function loadTokenStore() {
+  return loadJson(tokenStorePath);
+}
+
 function saveTokenStore(data) {
-  writeFileSync(tokenStorePath, JSON.stringify(data, null, 2));
+  saveJson(tokenStorePath, data);
+}
+
+function loadSyncStore() {
+  return loadJson(syncStorePath);
+}
+
+function saveSyncStore(data) {
+  saveJson(syncStorePath, data);
 }
 
 function getMicrosoftStatus() {
   const configured = Boolean(tenantId && clientId && clientSecret && redirectUri);
   const tokenStore = loadTokenStore();
+  const syncStore = loadSyncStore();
   const connected = Boolean(tokenStore?.access_token || tokenStore?.refresh_token);
   return {
     connected,
     configured,
     accountLabel: connected ? 'Microsoft account connected locally' : configured ? 'Microsoft app configured locally' : 'Microsoft app not configured',
-    lastSyncAt: tokenStore?.received_at || null,
+    lastSyncAt: syncStore?.synced_at || tokenStore?.received_at || null,
     connectors: {
       outlook: connected ? 'connected' : configured ? 'ready-for-auth' : 'needs-config',
       onedrive: connected ? 'connected' : configured ? 'ready-for-auth' : 'needs-config'
-    }
+    },
+    profile: syncStore?.profile || null,
+    syncSummary: syncStore?.summary || null
   };
 }
 
@@ -117,6 +137,93 @@ function postForm(url, data) {
     req.write(body);
     req.end();
   });
+}
+
+function graphGet(path, accessToken) {
+  return new Promise((resolve, reject) => {
+    const req = https.request({
+      hostname: 'graph.microsoft.com',
+      path,
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    }, (res) => {
+      let raw = '';
+      res.on('data', (chunk) => raw += chunk);
+      res.on('end', () => {
+        try {
+          resolve({ status: res.statusCode || 500, json: JSON.parse(raw) });
+        } catch (err) {
+          reject(err);
+        }
+      });
+    });
+    req.on('error', reject);
+    req.end();
+  });
+}
+
+async function refreshAccessTokenIfNeeded() {
+  const tokenStore = loadTokenStore();
+  if (!tokenStore?.refresh_token) return tokenStore;
+
+  const receivedAt = tokenStore.received_at ? Date.parse(tokenStore.received_at) : 0;
+  const expiresInMs = (tokenStore.expires_in || 0) * 1000;
+  const stillValid = tokenStore.access_token && receivedAt && Date.now() < receivedAt + expiresInMs - 60000;
+  if (stillValid) return tokenStore;
+
+  const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
+  const tokenResponse = await postForm(tokenUrl, {
+    client_id: clientId,
+    client_secret: clientSecret,
+    refresh_token: tokenStore.refresh_token,
+    grant_type: 'refresh_token',
+    scope: scopes.join(' ')
+  });
+
+  if (tokenResponse.status >= 400) {
+    throw new Error(`Refresh failed: ${JSON.stringify(tokenResponse.json)}`);
+  }
+
+  const refreshed = {
+    ...tokenStore,
+    ...tokenResponse.json,
+    refresh_token: tokenResponse.json.refresh_token || tokenStore.refresh_token,
+    received_at: new Date().toISOString()
+  };
+  saveTokenStore(refreshed);
+  return refreshed;
+}
+
+function summarizeMail(items = []) {
+  return items.map((item) => ({
+    id: item.id,
+    subject: item.subject || '(no subject)',
+    from: item.from?.emailAddress?.address || null,
+    receivedDateTime: item.receivedDateTime || null,
+    webLink: item.webLink || null
+  }));
+}
+
+function summarizeEvents(items = []) {
+  return items.map((item) => ({
+    id: item.id,
+    subject: item.subject || '(no title)',
+    start: item.start?.dateTime || null,
+    end: item.end?.dateTime || null,
+    webLink: item.webLink || null
+  }));
+}
+
+function summarizeDrive(items = []) {
+  return items.map((item) => ({
+    id: item.id,
+    name: item.name || '(unnamed)',
+    webUrl: item.webUrl || null,
+    lastModifiedDateTime: item.lastModifiedDateTime || null,
+    kind: item.folder ? 'folder' : item.file ? 'file' : 'item'
+  }));
 }
 
 const server = http.createServer(async (req, res) => {
@@ -194,10 +301,62 @@ const server = http.createServer(async (req, res) => {
         message: 'Microsoft is not connected yet. Complete the auth flow first.'
       });
     }
-    return sendJson(res, 501, {
-      ok: false,
-      message: 'Microsoft sync is not implemented yet. Token exchange works; ingestion is next.'
-    });
+
+    try {
+      const tokenStore = await refreshAccessTokenIfNeeded();
+      const accessToken = tokenStore?.access_token;
+      if (!accessToken) {
+        return sendJson(res, 500, { ok: false, message: 'No access token available after refresh.' });
+      }
+
+      const [me, messages, events, drive] = await Promise.all([
+        graphGet('/v1.0/me', accessToken),
+        graphGet('/v1.0/me/messages?$top=10&$select=id,subject,receivedDateTime,webLink,from', accessToken),
+        graphGet('/v1.0/me/events?$top=10&$select=id,subject,start,end,webLink&$orderby=start/dateTime', accessToken),
+        graphGet('/v1.0/me/drive/root/children?$top=20&$select=id,name,webUrl,lastModifiedDateTime,folder,file', accessToken)
+      ]);
+
+      const failures = [me, messages, events, drive].filter((r) => r.status >= 400);
+      if (failures.length) {
+        return sendJson(res, 502, {
+          ok: false,
+          message: 'One or more Microsoft Graph calls failed.',
+          failures: failures.map((r) => r.json)
+        });
+      }
+
+      const snapshot = {
+        synced_at: new Date().toISOString(),
+        profile: {
+          displayName: me.json.displayName || null,
+          userPrincipalName: me.json.userPrincipalName || null,
+          mail: me.json.mail || null,
+          id: me.json.id || null
+        },
+        summary: {
+          recentMessages: (messages.json.value || []).length,
+          upcomingEvents: (events.json.value || []).length,
+          driveItems: (drive.json.value || []).length
+        },
+        mail: summarizeMail(messages.json.value),
+        calendar: summarizeEvents(events.json.value),
+        drive: summarizeDrive(drive.json.value)
+      };
+
+      saveSyncStore(snapshot);
+
+      return sendJson(res, 200, {
+        ok: true,
+        message: 'Microsoft sync completed.',
+        snapshot
+      });
+    } catch (err) {
+      return sendJson(res, 500, {
+        ok: false,
+        message: 'Microsoft sync failed.',
+        error: String(err)
+      });
+    }
   }
 
   return sendJson(res, 404, { error: 'Not found', path: req.url });
