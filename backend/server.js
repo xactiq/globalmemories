@@ -341,6 +341,38 @@ function extractQuery(reqUrl) {
   return url.searchParams.get('q') || url.searchParams.get('query') || '';
 }
 
+function extractFileId(reqUrl) {
+  const url = new URL(reqUrl, `http://localhost:${port}`);
+  return url.searchParams.get('id') || '';
+}
+
+function getBuffer(url, accessToken, extraHeaders = {}) {
+  return new Promise((resolve, reject) => {
+    const parsed = new URL(url);
+    const req = https.request({
+      hostname: parsed.hostname,
+      path: parsed.pathname + parsed.search,
+      method: 'GET',
+      headers: {
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        ...extraHeaders
+      }
+    }, (res) => {
+      const chunks = [];
+      res.on('data', (chunk) => chunks.push(chunk));
+      res.on('end', () => {
+        resolve({
+          status: res.statusCode || 500,
+          buffer: Buffer.concat(chunks),
+          contentType: res.headers['content-type'] || 'application/octet-stream'
+        });
+      });
+    });
+    req.on('error', reject);
+    req.end();
+  });
+}
+
 const server = http.createServer(async (req, res) => {
   if (!req.url) return sendJson(res, 400, { error: 'Missing URL' });
   if (req.method === 'OPTIONS') return sendJson(res, 200, { ok: true });
@@ -361,7 +393,8 @@ const server = http.createServer(async (req, res) => {
       connect: { url: '/api/connectors/google/connect', method: 'POST' },
       sync: { url: '/api/connectors/google/sync', method: 'POST' },
       searchDrive: { url: '/api/connectors/google/drive/search?q=resume', method: 'GET' },
-      searchGmail: { url: '/api/connectors/google/gmail/search?q=resume', method: 'GET' }
+      searchGmail: { url: '/api/connectors/google/gmail/search?q=resume', method: 'GET' },
+      fetchDriveFile: { url: '/api/connectors/google/drive/file?id=<fileId>', method: 'GET' }
     });
   }
 
@@ -467,6 +500,43 @@ const server = http.createServer(async (req, res) => {
       });
     } catch (err) {
       return sendJson(res, 500, { ok: false, message: 'Gmail search failed.', error: String(err) });
+    }
+  }
+
+  if (req.method === 'GET' && req.url.startsWith('/api/connectors/google/drive/file')) {
+    const fileId = extractFileId(req.url).trim();
+    if (!fileId) return sendJson(res, 400, { ok: false, message: 'Missing file id. Use ?id=<fileId>' });
+    try {
+      const tokenStore = await refreshGoogleAccessTokenIfNeeded();
+      const accessToken = tokenStore?.access_token;
+      if (!accessToken) return sendJson(res, 500, { ok: false, message: 'No Google access token available after refresh.' });
+
+      const meta = await getJson(`https://www.googleapis.com/drive/v3/files/${fileId}?fields=id,name,mimeType,modifiedTime,webViewLink`, accessToken);
+      if (meta.status >= 400 || !meta.json) {
+        return sendJson(res, meta.status >= 400 ? meta.status : 502, { ok: false, message: 'Drive file metadata fetch failed.', error: meta.json || meta.raw || null });
+      }
+
+      const isGoogleDoc = meta.json.mimeType === 'application/vnd.google-apps.document';
+      if (isGoogleDoc) {
+        const exportRes = await getBuffer(`https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=text/plain`, accessToken);
+        if (exportRes.status >= 400) {
+          return sendJson(res, exportRes.status, { ok: false, message: 'Google Doc export failed.' });
+        }
+        return sendJson(res, 200, {
+          ok: true,
+          file: meta.json,
+          exportedAs: 'text/plain',
+          text: exportRes.buffer.toString('utf8')
+        });
+      }
+
+      return sendJson(res, 200, {
+        ok: true,
+        file: meta.json,
+        message: 'Non-Google-doc file fetched as metadata only for now.'
+      });
+    } catch (err) {
+      return sendJson(res, 500, { ok: false, message: 'Drive file fetch failed.', error: String(err) });
     }
   }
 
