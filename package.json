@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "python3 -m http.server 4173",
     "dev:backend": "cd backend && node server.js",
-    "build-data": "node build-memory-store.js && node build-connectors.js",
-    "prepare": "node build-memory-store.js && node build-connectors.js"
+    "build-data": "node build-memory-store.js && node build-connectors.js && node build-miro-export.js",
+    "build:miro": "node build-miro-export.js",
+    "prepare": "node build-memory-store.js && node build-connectors.js && node build-miro-export.js"
   }
 }

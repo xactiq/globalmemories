@@ -1,0 +1,18 @@
+{
+  "generatedAt": "2026-04-19T12:14:25.664Z",
+  "boardHint": "Strategic Memory Map",
+  "nodes": [
+    {
+      "id": "mem-resume-reference",
+      "type": "memory",
+      "title": "Resume document is available in Google Drive",
+      "summary": "The resume document can be found and opened from Google Drive through the Memory Hub connector flow.",
+      "tags": [
+        "resume",
+        "google-drive",
+        "documents"
+      ]
+    }
+  ],
+  "edges": []
+}

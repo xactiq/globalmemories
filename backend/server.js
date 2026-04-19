@@ -2,6 +2,8 @@ import http from 'node:http';
 import https from 'node:https';
 import { readFileSync, existsSync, writeFileSync, appendFileSync, mkdirSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { loadPlatformStore, savePlatformStore, buildMiroExport, saveMiroExport, getPlatformPaths } from './platform-store.js';
+import { getConnectorOverview, getJobOverview, getAuditOverview } from './mission-control-service.js';
 
 const envPath = join(process.cwd(), '.env');
 if (existsSync(envPath)) {
@@ -371,6 +373,41 @@ function appendMemoryEntry({ title, summary, tags }) {
   return path;
 }
 
+function appendCanonicalMemory({ title, summary, tags, savedPath }) {
+  const store = loadPlatformStore();
+  if (!store) return null;
+  const memory = {
+    memoryId: `mem-${Date.now()}`,
+    workspaceId: store.workspaces?.[0]?.workspaceId || 'default',
+    title,
+    summary,
+    content: null,
+    excerpt: summary,
+    memoryType: 'fact',
+    importance: 0.5,
+    status: 'active',
+    tags: tags ? tags.split(',').map((tag) => tag.trim()).filter(Boolean) : [],
+    entityIds: [],
+    sourceRefs: [{
+      sourceId: `src-${Date.now()}`,
+      provider: 'local',
+      kind: 'file',
+      externalId: null,
+      url: null,
+      excerpt: summary,
+      confidence: 0.95
+    }],
+    createdBy: 'memory-hub',
+    visibility: 'workspace',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  store.memories = [memory, ...(store.memories || [])];
+  savePlatformStore(store);
+  saveMiroExport(buildMiroExport(store));
+  return memory;
+}
+
 function getBuffer(url, accessToken, extraHeaders = {}) {
   return new Promise((resolve, reject) => {
     const parsed = new URL(url);
@@ -420,6 +457,42 @@ function searchWorkspaceMemory(query) {
 const server = http.createServer(async (req, res) => {
   if (!req.url) return sendJson(res, 400, { error: 'Missing URL' });
   if (req.method === 'OPTIONS') return sendJson(res, 200, { ok: true });
+
+  if (req.method === 'GET' && req.url === '/api/platform/paths') {
+    return sendJson(res, 200, { ok: true, ...getPlatformPaths() });
+  }
+
+  if (req.method === 'GET' && req.url === '/api/connectors') {
+    const store = loadPlatformStore();
+    return sendJson(res, 200, { ok: true, connectors: store?.connectors || [] });
+  }
+
+  if (req.method === 'GET' && req.url === '/api/jobs') {
+    return sendJson(res, 200, { ok: true, ...getJobOverview() });
+  }
+
+  if (req.method === 'GET' && req.url === '/api/audit') {
+    return sendJson(res, 200, { ok: true, ...getAuditOverview() });
+  }
+
+  if (req.method === 'GET' && req.url === '/api/mission-control/overview') {
+    return sendJson(res, 200, {
+      ok: true,
+      connectors: getConnectorOverview(),
+      jobs: getJobOverview(),
+      audit: getAuditOverview()
+    });
+  }
+
+  if (req.method === 'GET' && req.url.startsWith('/api/memory/search')) {
+    const query = extractQuery(req.url).trim().toLowerCase();
+    const store = loadPlatformStore();
+    const memories = (store?.memories || []).filter((memory) => {
+      const blob = `${memory.title} ${memory.summary} ${memory.excerpt || ''} ${(memory.tags || []).join(' ')}`.toLowerCase();
+      return !query || blob.includes(query);
+    });
+    return sendJson(res, 200, { ok: true, results: memories });
+  }
 
   if (req.method === 'GET' && req.url === '/api/connectors/microsoft/status') {
     const status = getMicrosoftStatus();
@@ -601,6 +674,7 @@ const server = http.createServer(async (req, res) => {
       const summary = String(body.summary).trim();
       const tags = String(body.tags || '').trim();
       const savedPath = appendMemoryEntry({ title, summary, tags });
+      const canonicalMemory = appendCanonicalMemory({ title, summary, tags, savedPath });
       return sendJson(res, 200, {
         ok: true,
         path: savedPath,
@@ -615,7 +689,8 @@ const server = http.createServer(async (req, res) => {
           sourceId: 'live-memory-hub',
           rawPath: savedPath,
           tags: tags ? tags.split(',').map((tag) => tag.trim()).filter(Boolean) : []
-        }
+        },
+        canonicalMemory
       });
     } catch (err) {
       return sendJson(res, 500, { ok: false, message: 'Failed to save memory.', error: String(err) });
