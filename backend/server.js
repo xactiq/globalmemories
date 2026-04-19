@@ -2,7 +2,7 @@ import http from 'node:http';
 import https from 'node:https';
 import { readFileSync, existsSync, writeFileSync, appendFileSync, mkdirSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { loadPlatformStore, savePlatformStore, buildMiroExport, saveMiroExport, getPlatformPaths } from './platform-store.js';
+import { loadPlatformStore, savePlatformStore, buildMiroExport, saveMiroExport, getPlatformPaths, appendPlatformJob, updatePlatformJob, appendAuditEvent } from './platform-store.js';
 import { getConnectorOverview, getJobOverview, getAuditOverview } from './mission-control-service.js';
 
 const envPath = join(process.cwd(), '.env');
@@ -510,6 +510,14 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 200, { ok: true, results: memories });
   }
 
+  if (req.method === 'GET' && req.url.startsWith('/api/memory/') && req.url.endsWith('/provenance')) {
+    const memoryId = req.url.split('/api/memory/')[1]?.replace('/provenance', '').split('?')[0];
+    const store = loadPlatformStore();
+    const memory = (store?.memories || []).find((item) => item.memoryId === memoryId);
+    if (!memory) return sendJson(res, 404, { ok: false, message: 'Memory not found.' });
+    return sendJson(res, 200, { ok: true, provenance: memory.sourceRefs || [] });
+  }
+
   if (req.method === 'GET' && req.url.startsWith('/api/memory/')) {
     const memoryId = req.url.split('/api/memory/')[1]?.split('?')[0];
     const store = loadPlatformStore();
@@ -806,6 +814,20 @@ const server = http.createServer(async (req, res) => {
     const status = getGoogleStatus();
     if (!status.connected) return sendJson(res, 400, { ok: false, message: 'Google is not connected yet. Complete the auth flow first.' });
 
+    const syncJobId = `job-google-${Date.now()}`;
+    appendPlatformJob({
+      syncJobId,
+      workspaceId: loadPlatformStore()?.workspaces?.[0]?.workspaceId || 'default',
+      connectorId: 'google-workspace',
+      jobType: 'connector.sync',
+      status: 'running',
+      startedAt: new Date().toISOString(),
+      finishedAt: null,
+      metrics: {},
+      errors: [],
+      triggeredBy: 'memory-hub'
+    });
+
     try {
       const tokenStore = await refreshGoogleAccessTokenIfNeeded();
       const accessToken = tokenStore?.access_token;
@@ -850,6 +872,23 @@ const server = http.createServer(async (req, res) => {
       };
 
       saveGoogleSyncStore(snapshot);
+      updatePlatformJob(syncJobId, {
+        status: issues.length ? 'completed_with_issues' : 'completed',
+        finishedAt: new Date().toISOString(),
+        metrics: snapshot.summary,
+        errors: issues
+      });
+      appendAuditEvent({
+        auditEventId: `audit-${Date.now()}`,
+        workspaceId: loadPlatformStore()?.workspaces?.[0]?.workspaceId || 'default',
+        actorId: 'google-connector',
+        actorType: 'system',
+        action: 'connector.sync.completed',
+        targetType: 'connector',
+        targetId: 'google-workspace',
+        payload: { partial: issues.length > 0, summary: snapshot.summary },
+        createdAt: new Date().toISOString()
+      });
 
       return sendJson(res, issues.length ? 207 : 200, {
         ok: true,
@@ -858,6 +897,22 @@ const server = http.createServer(async (req, res) => {
         snapshot
       });
     } catch (err) {
+      updatePlatformJob(syncJobId, {
+        status: 'failed',
+        finishedAt: new Date().toISOString(),
+        errors: [{ message: String(err) }]
+      });
+      appendAuditEvent({
+        auditEventId: `audit-${Date.now()}`,
+        workspaceId: loadPlatformStore()?.workspaces?.[0]?.workspaceId || 'default',
+        actorId: 'google-connector',
+        actorType: 'system',
+        action: 'connector.sync.failed',
+        targetType: 'connector',
+        targetId: 'google-workspace',
+        payload: { error: String(err) },
+        createdAt: new Date().toISOString()
+      });
       return sendJson(res, 500, { ok: false, message: 'Google sync failed.', error: String(err) });
     }
   }
@@ -865,6 +920,20 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'POST' && req.url === '/api/connectors/microsoft/sync') {
     const status = getMicrosoftStatus();
     if (!status.connected) return sendJson(res, 400, { ok: false, message: 'Microsoft is not connected yet. Complete the auth flow first.' });
+
+    const syncJobId = `job-microsoft-${Date.now()}`;
+    appendPlatformJob({
+      syncJobId,
+      workspaceId: loadPlatformStore()?.workspaces?.[0]?.workspaceId || 'default',
+      connectorId: 'microsoft-graph',
+      jobType: 'connector.sync',
+      status: 'running',
+      startedAt: new Date().toISOString(),
+      finishedAt: null,
+      metrics: {},
+      errors: [],
+      triggeredBy: 'memory-hub'
+    });
 
     try {
       const tokenStore = await refreshAccessTokenIfNeeded();
@@ -912,6 +981,23 @@ const server = http.createServer(async (req, res) => {
       };
 
       saveSyncStore(snapshot);
+      updatePlatformJob(syncJobId, {
+        status: issues.length ? 'completed_with_issues' : 'completed',
+        finishedAt: new Date().toISOString(),
+        metrics: snapshot.summary,
+        errors: issues
+      });
+      appendAuditEvent({
+        auditEventId: `audit-${Date.now()}`,
+        workspaceId: loadPlatformStore()?.workspaces?.[0]?.workspaceId || 'default',
+        actorId: 'microsoft-connector',
+        actorType: 'system',
+        action: 'connector.sync.completed',
+        targetType: 'connector',
+        targetId: 'microsoft-graph',
+        payload: { partial: issues.length > 0, summary: snapshot.summary },
+        createdAt: new Date().toISOString()
+      });
       return sendJson(res, issues.length ? 207 : 200, {
         ok: true,
         partial: issues.length > 0,
@@ -919,6 +1005,22 @@ const server = http.createServer(async (req, res) => {
         snapshot
       });
     } catch (err) {
+      updatePlatformJob(syncJobId, {
+        status: 'failed',
+        finishedAt: new Date().toISOString(),
+        errors: [{ message: String(err) }]
+      });
+      appendAuditEvent({
+        auditEventId: `audit-${Date.now()}`,
+        workspaceId: loadPlatformStore()?.workspaces?.[0]?.workspaceId || 'default',
+        actorId: 'microsoft-connector',
+        actorType: 'system',
+        action: 'connector.sync.failed',
+        targetType: 'connector',
+        targetId: 'microsoft-graph',
+        payload: { error: String(err) },
+        createdAt: new Date().toISOString()
+      });
       return sendJson(res, 500, { ok: false, message: 'Microsoft sync failed.', error: String(err) });
     }
   }

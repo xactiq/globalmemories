@@ -21,7 +21,7 @@ async function loadOverview() {
       : '<div class="card"><strong>No jobs yet</strong><div class="muted">Sync and workflow jobs will appear here.</div></div>';
 
     auditEl.innerHTML = (data.audit.events || []).length
-      ? data.audit.events.map((event) => `<div class="card"><strong>${event.action}</strong><div class="muted">${event.targetType} • ${event.targetId}</div></div>`).join('')
+      ? data.audit.events.map((event) => `<div class="card"><strong>${event.action}</strong><div class="muted">${event.targetType} • ${event.targetId}</div><div class="muted">${event.createdAt || ''}</div></div>`).join('')
       : '<div class="card"><strong>No audit events yet</strong><div class="muted">Audit trail records will appear here.</div></div>';
   } catch (err) {
     overviewEl.innerHTML = `<div class="card"><strong>Load failed</strong><div class="muted">${err.message}</div></div>`;

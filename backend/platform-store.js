@@ -53,3 +53,29 @@ export function saveMiroExport(data) {
 export function getPlatformPaths() {
   return { platformStorePath, miroExportPath };
 }
+
+export function appendPlatformJob(job) {
+  const store = loadPlatformStore();
+  if (!store) return null;
+  store.syncJobs = [job, ...(store.syncJobs || [])];
+  savePlatformStore(store);
+  return job;
+}
+
+export function updatePlatformJob(syncJobId, patch) {
+  const store = loadPlatformStore();
+  if (!store) return null;
+  const index = (store.syncJobs || []).findIndex((job) => job.syncJobId === syncJobId);
+  if (index === -1) return null;
+  store.syncJobs[index] = { ...store.syncJobs[index], ...patch };
+  savePlatformStore(store);
+  return store.syncJobs[index];
+}
+
+export function appendAuditEvent(event) {
+  const store = loadPlatformStore();
+  if (!store) return null;
+  store.auditEvents = [event, ...(store.auditEvents || [])];
+  savePlatformStore(store);
+  return event;
+}
