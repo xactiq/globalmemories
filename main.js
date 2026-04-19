@@ -150,6 +150,20 @@ function setDetail(title, lines = [], links = []) {
   detailContent.innerHTML = `<h3>${title}</h3><p>${lines.filter(Boolean).join('</p><p>')}</p>${links.length ? `<div class="actions">${links.map((link) => `<a class="button" href="${link.href}" target="_blank" rel="noopener noreferrer">${link.label}</a>`).join('')}</div>` : ''}`;
 }
 
+function groupedSearchLabel(type) {
+  if (type === 'memory-file') return 'Local memories';
+  if (type === 'google-drive') return 'Google Drive';
+  if (type === 'gmail') return 'Gmail';
+  return 'Other';
+}
+
+function openMemoryDetail(memory) {
+  const links = memory.rawPath && String(memory.rawPath).startsWith('http')
+    ? [{ label: 'Open source', href: memory.rawPath }]
+    : [];
+  setDetail(memory.title, [memory.summary, memory.excerpt || '', `Source: ${memory.rawPath || memory.sourceId || 'unknown'}`], links);
+}
+
 async function refreshHubData() {
   try {
     const res = await fetch(`./hub-data.json?ts=${Date.now()}`);
@@ -177,8 +191,16 @@ async function renderSearchResults(query) {
       return;
     }
 
-    searchResults.innerHTML = results.slice(0, 20).map((result, index) => {
-      return `<button class="card search-result" data-result-index="${index}" style="text-align:left; cursor:pointer"><strong>${result.title}</strong><div class="muted">${result.type}</div><div class="muted">${result.snippet || ''}</div></button>`;
+    const grouped = results.slice(0, 20).reduce((acc, result, index) => {
+      const key = groupedSearchLabel(result.type);
+      if (!acc[key]) acc[key] = [];
+      acc[key].push({ result, index });
+      return acc;
+    }, {});
+
+    searchResults.innerHTML = Object.entries(grouped).map(([label, items]) => {
+      const cards = items.map(({ result, index }) => `<button class="card search-result" data-result-index="${index}" style="text-align:left; cursor:pointer"><strong>${result.title}</strong><div class="muted">${result.type}</div><div class="muted">${result.snippet || ''}</div></button>`).join('');
+      return `<div class="card"><strong>${label}</strong><div class="list" style="margin-top:10px">${cards}</div></div>`;
     }).join('');
 
     [...document.querySelectorAll('.search-result')].forEach((btn) => {
@@ -275,13 +297,20 @@ function renderHub() {
   }
   sourcesEl.innerHTML = sourceCards.join('');
 
-  const memoryCards = hub.store.memories.slice(0, 8).map((memory) => {
-    return `<div class="card"><strong>${memory.title}</strong><div class="muted">${memory.timestamp} • ${memory.platform}</div><div class="muted">${memory.summary}</div><div class="actions"><span class="button">${memory.sourceId}</span></div></div>`;
+  const memoryCards = hub.store.memories.slice(0, 8).map((memory, index) => {
+    return `<button class="card memory-card" data-memory-index="${index}" style="text-align:left; cursor:pointer"><strong>${memory.title}</strong><div class="muted">${memory.timestamp} • ${memory.platform}</div><div class="muted">${memory.summary}</div><div class="actions"><span class="button">${memory.sourceId}</span></div></button>`;
   });
   if (googleSnapshot) {
     memoryCards.unshift(`<div class="card"><strong>Google Workspace Snapshot</strong><div class="muted">${googleSnapshot.synced_at || 'unknown'} • google</div><div class="muted">Profile: ${googleSnapshot.profile?.email || 'unknown'} • Gmail ${googleSnapshot.summary?.gmailMessages ?? 0} • Calendar ${googleSnapshot.summary?.upcomingEvents ?? 0} • Drive ${googleSnapshot.summary?.driveItems ?? 0}</div><div class="actions"><span class="button">google-sync</span></div></div>`);
   }
   memoriesEl.innerHTML = memoryCards.join('');
+
+  [...document.querySelectorAll('.memory-card')].forEach((card) => {
+    card.addEventListener('click', () => {
+      const memory = hub?.store?.memories?.[Number(card.dataset.memoryIndex)];
+      if (memory) openMemoryDetail(memory);
+    });
+  });
 
   renderSettings(hub.connectors);
 }
