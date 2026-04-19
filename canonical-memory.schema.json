@@ -1,0 +1,206 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Canonical Memory Platform Schema",
+  "type": "object",
+  "required": ["workspaces", "sources", "memories", "entities", "relationships", "connectors", "syncJobs", "auditEvents"],
+  "properties": {
+    "workspaces": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/workspace"
+      }
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/source"
+      }
+    },
+    "memories": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/memoryRecord"
+      }
+    },
+    "entities": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/entity"
+      }
+    },
+    "relationships": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/relationship"
+      }
+    },
+    "connectors": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/connector"
+      }
+    },
+    "syncJobs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/syncJob"
+      }
+    },
+    "auditEvents": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/auditEvent"
+      }
+    }
+  },
+  "$defs": {
+    "workspace": {
+      "type": "object",
+      "required": ["workspaceId", "name", "slug", "plan", "ownerId", "createdAt", "updatedAt"],
+      "properties": {
+        "workspaceId": { "type": "string" },
+        "name": { "type": "string" },
+        "slug": { "type": "string" },
+        "plan": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "settings": { "type": "object" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      }
+    },
+    "source": {
+      "type": "object",
+      "required": ["sourceId", "workspaceId", "provider", "kind", "title", "createdAt", "updatedAt"],
+      "properties": {
+        "sourceId": { "type": "string" },
+        "workspaceId": { "type": "string" },
+        "provider": { "type": "string" },
+        "kind": { "type": "string" },
+        "externalId": { "type": ["string", "null"] },
+        "title": { "type": "string" },
+        "url": { "type": ["string", "null"] },
+        "path": { "type": ["string", "null"] },
+        "author": { "type": ["string", "null"] },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "syncMetadata": { "type": "object" }
+      }
+    },
+    "memoryRecord": {
+      "type": "object",
+      "required": ["memoryId", "workspaceId", "title", "summary", "memoryType", "status", "createdAt", "updatedAt"],
+      "properties": {
+        "memoryId": { "type": "string" },
+        "workspaceId": { "type": "string" },
+        "title": { "type": "string" },
+        "summary": { "type": "string" },
+        "content": { "type": ["string", "null"] },
+        "excerpt": { "type": ["string", "null"] },
+        "memoryType": { "type": "string" },
+        "importance": { "type": ["number", "null"] },
+        "status": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "entityIds": { "type": "array", "items": { "type": "string" } },
+        "sourceRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/sourceRef"
+          }
+        },
+        "createdBy": { "type": ["string", "null"] },
+        "visibility": { "type": ["string", "null"] },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      }
+    },
+    "sourceRef": {
+      "type": "object",
+      "required": ["sourceId", "provider", "kind"],
+      "properties": {
+        "sourceId": { "type": "string" },
+        "provider": { "type": "string" },
+        "kind": { "type": "string" },
+        "externalId": { "type": ["string", "null"] },
+        "url": { "type": ["string", "null"] },
+        "excerpt": { "type": ["string", "null"] },
+        "confidence": { "type": ["number", "null"] }
+      }
+    },
+    "entity": {
+      "type": "object",
+      "required": ["entityId", "workspaceId", "type", "name", "createdAt", "updatedAt"],
+      "properties": {
+        "entityId": { "type": "string" },
+        "workspaceId": { "type": "string" },
+        "type": { "type": "string" },
+        "name": { "type": "string" },
+        "aliases": { "type": "array", "items": { "type": "string" } },
+        "summary": { "type": ["string", "null"] },
+        "attributes": { "type": "object" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      }
+    },
+    "relationship": {
+      "type": "object",
+      "required": ["relationshipId", "workspaceId", "fromId", "toId", "relationshipType", "createdAt", "updatedAt"],
+      "properties": {
+        "relationshipId": { "type": "string" },
+        "workspaceId": { "type": "string" },
+        "fromId": { "type": "string" },
+        "toId": { "type": "string" },
+        "relationshipType": { "type": "string" },
+        "weight": { "type": ["number", "null"] },
+        "sourceRefs": { "type": "array", "items": { "$ref": "#/$defs/sourceRef" } },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      }
+    },
+    "connector": {
+      "type": "object",
+      "required": ["connectorId", "workspaceId", "provider", "status", "authStatus"],
+      "properties": {
+        "connectorId": { "type": "string" },
+        "workspaceId": { "type": "string" },
+        "provider": { "type": "string" },
+        "status": { "type": "string" },
+        "authStatus": { "type": "string" },
+        "scopes": { "type": "array", "items": { "type": "string" } },
+        "lastSyncAt": { "type": ["string", "null"] },
+        "health": { "type": ["string", "null"] },
+        "configRef": { "type": ["string", "null"] }
+      }
+    },
+    "syncJob": {
+      "type": "object",
+      "required": ["syncJobId", "workspaceId", "connectorId", "jobType", "status", "startedAt"],
+      "properties": {
+        "syncJobId": { "type": "string" },
+        "workspaceId": { "type": "string" },
+        "connectorId": { "type": "string" },
+        "jobType": { "type": "string" },
+        "status": { "type": "string" },
+        "startedAt": { "type": "string" },
+        "finishedAt": { "type": ["string", "null"] },
+        "metrics": { "type": "object" },
+        "errors": { "type": "array", "items": { "type": "object" } },
+        "triggeredBy": { "type": ["string", "null"] }
+      }
+    },
+    "auditEvent": {
+      "type": "object",
+      "required": ["auditEventId", "workspaceId", "action", "targetType", "targetId", "createdAt"],
+      "properties": {
+        "auditEventId": { "type": "string" },
+        "workspaceId": { "type": "string" },
+        "actorId": { "type": ["string", "null"] },
+        "actorType": { "type": ["string", "null"] },
+        "action": { "type": "string" },
+        "targetType": { "type": "string" },
+        "targetId": { "type": "string" },
+        "payload": { "type": "object" },
+        "createdAt": { "type": "string" }
+      }
+    }
+  }
+}

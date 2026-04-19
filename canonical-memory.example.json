@@ -1,0 +1,65 @@
+{
+  "workspaces": [
+    {
+      "workspaceId": "xactiq-main",
+      "name": "XactIQ Main",
+      "slug": "xactiq-main",
+      "plan": "pro",
+      "ownerId": "logan",
+      "settings": {},
+      "createdAt": "2026-04-19T00:00:00Z",
+      "updatedAt": "2026-04-19T00:00:00Z"
+    }
+  ],
+  "sources": [
+    {
+      "sourceId": "src-google-drive-resume",
+      "workspaceId": "xactiq-main",
+      "provider": "google",
+      "kind": "doc",
+      "externalId": "1brLgqsqEYjCuVfr7q-RX8b2jYnx66dQV5akYJuZoj5A",
+      "title": "Resume UTD 1",
+      "url": "https://docs.google.com/document/d/1brLgqsqEYjCuVfr7q-RX8b2jYnx66dQV5akYJuZoj5A/edit",
+      "path": null,
+      "author": "admin@xactiq.net",
+      "createdAt": "2026-04-19T00:00:00Z",
+      "updatedAt": "2026-04-19T00:00:00Z",
+      "syncMetadata": {}
+    }
+  ],
+  "memories": [
+    {
+      "memoryId": "mem-resume-reference",
+      "workspaceId": "xactiq-main",
+      "title": "Resume document is available in Google Drive",
+      "summary": "The resume document can be found and opened from Google Drive through the Memory Hub connector flow.",
+      "content": null,
+      "excerpt": "Resume UTD 1 in Google Drive.",
+      "memoryType": "doc-note",
+      "importance": 0.9,
+      "status": "active",
+      "tags": ["resume", "google-drive", "documents"],
+      "entityIds": [],
+      "sourceRefs": [
+        {
+          "sourceId": "src-google-drive-resume",
+          "provider": "google",
+          "kind": "doc",
+          "externalId": "1brLgqsqEYjCuVfr7q-RX8b2jYnx66dQV5akYJuZoj5A",
+          "url": "https://docs.google.com/document/d/1brLgqsqEYjCuVfr7q-RX8b2jYnx66dQV5akYJuZoj5A/edit",
+          "excerpt": "Resume UTD 1",
+          "confidence": 0.99
+        }
+      ],
+      "createdBy": "system",
+      "visibility": "workspace",
+      "createdAt": "2026-04-19T00:00:00Z",
+      "updatedAt": "2026-04-19T00:00:00Z"
+    }
+  ],
+  "entities": [],
+  "relationships": [],
+  "connectors": [],
+  "syncJobs": [],
+  "auditEvents": []
+}

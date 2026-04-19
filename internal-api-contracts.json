@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Internal API Contracts",
+  "type": "object",
+  "properties": {
+    "memory": {
+      "type": "object",
+      "properties": {
+        "search": { "type": "string", "const": "GET /api/memory/search?q=" },
+        "get": { "type": "string", "const": "GET /api/memory/:id" },
+        "list": { "type": "string", "const": "GET /api/memory?workspaceId=&type=&tag=" },
+        "create": { "type": "string", "const": "POST /api/memory" },
+        "update": { "type": "string", "const": "PATCH /api/memory/:id" },
+        "provenance": { "type": "string", "const": "GET /api/memory/:id/provenance" }
+      }
+    },
+    "entities": {
+      "type": "object",
+      "properties": {
+        "get": { "type": "string", "const": "GET /api/entities/:id" },
+        "create": { "type": "string", "const": "POST /api/entities" },
+        "update": { "type": "string", "const": "PATCH /api/entities/:id" },
+        "graph": { "type": "string", "const": "GET /api/graph?workspaceId=" }
+      }
+    },
+    "connectors": {
+      "type": "object",
+      "properties": {
+        "list": { "type": "string", "const": "GET /api/connectors" },
+        "status": { "type": "string", "const": "GET /api/connectors/:id/status" },
+        "connect": { "type": "string", "const": "POST /api/connectors/:id/connect" },
+        "sync": { "type": "string", "const": "POST /api/connectors/:id/sync" },
+        "jobs": { "type": "string", "const": "GET /api/connectors/:id/jobs" }
+      }
+    },
+    "jobs": {
+      "type": "object",
+      "properties": {
+        "list": { "type": "string", "const": "GET /api/jobs" },
+        "get": { "type": "string", "const": "GET /api/jobs/:id" },
+        "retry": { "type": "string", "const": "POST /api/jobs/:id/retry" },
+        "cancel": { "type": "string", "const": "POST /api/jobs/:id/cancel" }
+      }
+    },
+    "audit": {
+      "type": "object",
+      "properties": {
+        "list": { "type": "string", "const": "GET /api/audit" },
+        "filtered": { "type": "string", "const": "GET /api/audit?targetType=&targetId=" }
+      }
+    }
+  }
+}
