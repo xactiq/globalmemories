@@ -520,7 +520,13 @@ const server = http.createServer(async (req, res) => {
       if (isGoogleDoc) {
         const exportRes = await getBuffer(`https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=text/plain`, accessToken);
         if (exportRes.status >= 400) {
-          return sendJson(res, exportRes.status, { ok: false, message: 'Google Doc export failed.' });
+          return sendJson(res, exportRes.status, {
+            ok: false,
+            message: 'Google Doc export failed.',
+            status: exportRes.status,
+            contentType: exportRes.contentType,
+            error: exportRes.buffer.toString('utf8') || null
+          });
         }
         return sendJson(res, 200, {
           ok: true,
