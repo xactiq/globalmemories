@@ -597,12 +597,26 @@ const server = http.createServer(async (req, res) => {
       if (!body?.title || !body?.summary) {
         return sendJson(res, 400, { ok: false, message: 'Need title and summary.' });
       }
-      const savedPath = appendMemoryEntry({
-        title: String(body.title).trim(),
-        summary: String(body.summary).trim(),
-        tags: String(body.tags || '').trim()
+      const title = String(body.title).trim();
+      const summary = String(body.summary).trim();
+      const tags = String(body.tags || '').trim();
+      const savedPath = appendMemoryEntry({ title, summary, tags });
+      return sendJson(res, 200, {
+        ok: true,
+        path: savedPath,
+        message: 'Memory saved to workspace daily note.',
+        memory: {
+          id: `live-${Date.now()}`,
+          title,
+          summary,
+          excerpt: summary,
+          timestamp: new Date().toISOString(),
+          platform: 'memory-hub',
+          sourceId: 'live-memory-hub',
+          rawPath: savedPath,
+          tags: tags ? tags.split(',').map((tag) => tag.trim()).filter(Boolean) : []
+        }
       });
-      return sendJson(res, 200, { ok: true, path: savedPath, message: 'Memory saved to workspace daily note.' });
     } catch (err) {
       return sendJson(res, 500, { ok: false, message: 'Failed to save memory.', error: String(err) });
     }

@@ -196,6 +196,25 @@ async function renderSearchResults(query) {
   }
 }
 
+function insertLiveMemory(memory) {
+  if (!hub?.store) return;
+  hub.store.memories = [memory, ...(hub.store.memories || []).filter((item) => item.title !== memory.title || item.summary !== memory.summary)];
+  hub.counts.memories = hub.store.memories.length;
+
+  const existingNode = graph.nodes.find((node) => node.id === memory.id);
+  if (!existingNode) {
+    const nextNode = {
+      id: memory.id,
+      label: memory.title,
+      group: 'memory',
+      file: memory.rawPath
+    };
+    graph.nodes = distributeOnSphere([...graph.nodes.map(({ x, y, z, rotated, scale, depth, ...node }) => node), nextNode]);
+  }
+
+  renderHub();
+}
+
 function renderSettings(connectors) {
   settingsEl.innerHTML = connectors.map((connector) => {
     const microsoft = backendStatus?.status?.connectors || {};
@@ -354,6 +373,7 @@ saveMemoryBtn?.addEventListener('click', async () => {
     const data = await res.json();
     if (!res.ok || !data.ok) throw new Error(data.message || 'Save failed');
     memorySaveStatus.textContent = `Saved to ${data.path}`;
+    if (data.memory) insertLiveMemory(data.memory);
     setDetail(title, [summary, `Tags: ${tags || 'none'}`, `Saved: ${data.path}`]);
     memoryTitle.value = '';
     memorySummary.value = '';
