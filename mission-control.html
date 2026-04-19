@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mission Control</title>
+    <style>
+      :root { color-scheme: dark; }
+      body { margin: 0; font-family: Inter, system-ui, sans-serif; background: #07111f; color: #e8f0ff; }
+      .wrap { max-width: 980px; margin: 0 auto; padding: 24px; }
+      .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+      .card { padding: 16px; border-radius: 14px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); }
+      .muted { color: #8fa7ca; font-size: 13px; }
+      .list { display: grid; gap: 10px; margin-top: 16px; }
+      h1, h2, h3 { margin-top: 0; }
+      code { color: #93c5fd; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>Mission Control</h1>
+      <p class="muted">Operational overview for connectors, jobs, and audit state.</p>
+      <div class="grid" id="overview"></div>
+      <h2 style="margin-top:24px">Recent jobs</h2>
+      <div class="list" id="jobs"></div>
+      <h2 style="margin-top:24px">Recent audit events</h2>
+      <div class="list" id="audit"></div>
+    </div>
+    <script type="module" src="./mission-control.js"></script>
+  </body>
+</html>

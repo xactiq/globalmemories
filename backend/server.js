@@ -373,6 +373,11 @@ function appendMemoryEntry({ title, summary, tags }) {
   return path;
 }
 
+function persistPlatformStore(store) {
+  savePlatformStore(store);
+  saveMiroExport(buildMiroExport(store));
+}
+
 function appendCanonicalMemory({ title, summary, tags, savedPath }) {
   const store = loadPlatformStore();
   if (!store) return null;
@@ -395,7 +400,8 @@ function appendCanonicalMemory({ title, summary, tags, savedPath }) {
       externalId: null,
       url: null,
       excerpt: summary,
-      confidence: 0.95
+      confidence: 0.95,
+      path: savedPath
     }],
     createdBy: 'memory-hub',
     visibility: 'workspace',
@@ -403,8 +409,18 @@ function appendCanonicalMemory({ title, summary, tags, savedPath }) {
     updatedAt: new Date().toISOString()
   };
   store.memories = [memory, ...(store.memories || [])];
-  savePlatformStore(store);
-  saveMiroExport(buildMiroExport(store));
+  store.auditEvents = [{
+    auditEventId: `audit-${Date.now()}`,
+    workspaceId: memory.workspaceId,
+    actorId: 'memory-hub',
+    actorType: 'system',
+    action: 'memory.created',
+    targetType: 'memory',
+    targetId: memory.memoryId,
+    payload: { title: memory.title },
+    createdAt: new Date().toISOString()
+  }, ...(store.auditEvents || [])];
+  persistPlatformStore(store);
   return memory;
 }
 
@@ -492,6 +508,66 @@ const server = http.createServer(async (req, res) => {
       return !query || blob.includes(query);
     });
     return sendJson(res, 200, { ok: true, results: memories });
+  }
+
+  if (req.method === 'GET' && req.url.startsWith('/api/memory/')) {
+    const memoryId = req.url.split('/api/memory/')[1]?.split('?')[0];
+    const store = loadPlatformStore();
+    const memory = (store?.memories || []).find((item) => item.memoryId === memoryId);
+    if (!memory) return sendJson(res, 404, { ok: false, message: 'Memory not found.' });
+    return sendJson(res, 200, { ok: true, memory });
+  }
+
+  if (req.method === 'POST' && req.url === '/api/memory') {
+    try {
+      const raw = await readBody(req);
+      const body = parseJsonMaybe(raw);
+      if (!body?.title || !body?.summary) return sendJson(res, 400, { ok: false, message: 'Need title and summary.' });
+      const canonicalMemory = appendCanonicalMemory({
+        title: String(body.title).trim(),
+        summary: String(body.summary).trim(),
+        tags: String(body.tags || '').trim(),
+        savedPath: String(body.savedPath || '')
+      });
+      return sendJson(res, 200, { ok: true, memory: canonicalMemory });
+    } catch (err) {
+      return sendJson(res, 500, { ok: false, message: 'Failed to create memory.', error: String(err) });
+    }
+  }
+
+  if (req.method === 'PATCH' && req.url.startsWith('/api/memory/')) {
+    try {
+      const memoryId = req.url.split('/api/memory/')[1]?.split('?')[0];
+      const raw = await readBody(req);
+      const body = parseJsonMaybe(raw);
+      const store = loadPlatformStore();
+      const memories = store?.memories || [];
+      const index = memories.findIndex((item) => item.memoryId === memoryId);
+      if (index === -1) return sendJson(res, 404, { ok: false, message: 'Memory not found.' });
+      memories[index] = {
+        ...memories[index],
+        ...(body?.title ? { title: String(body.title).trim() } : {}),
+        ...(body?.summary ? { summary: String(body.summary).trim(), excerpt: String(body.summary).trim() } : {}),
+        ...(body?.tags ? { tags: String(body.tags).split(',').map((tag) => tag.trim()).filter(Boolean) } : {}),
+        updatedAt: new Date().toISOString()
+      };
+      store.memories = memories;
+      store.auditEvents = [{
+        auditEventId: `audit-${Date.now()}`,
+        workspaceId: memories[index].workspaceId,
+        actorId: 'memory-hub',
+        actorType: 'system',
+        action: 'memory.updated',
+        targetType: 'memory',
+        targetId: memories[index].memoryId,
+        payload: { title: memories[index].title },
+        createdAt: new Date().toISOString()
+      }, ...(store.auditEvents || [])];
+      persistPlatformStore(store);
+      return sendJson(res, 200, { ok: true, memory: memories[index] });
+    } catch (err) {
+      return sendJson(res, 500, { ok: false, message: 'Failed to update memory.', error: String(err) });
+    }
   }
 
   if (req.method === 'GET' && req.url === '/api/connectors/microsoft/status') {
