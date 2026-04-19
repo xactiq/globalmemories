@@ -6,14 +6,20 @@ async function loadOverview() {
   const auditEl = document.getElementById('audit');
 
   try {
-    const res = await fetch(`${BACKEND_BASE}/api/mission-control/overview`);
-    const data = await res.json();
-    if (!res.ok || !data.ok) throw new Error(data.message || 'Failed to load overview');
+    const [overviewRes, connectorsRes] = await Promise.all([
+      fetch(`${BACKEND_BASE}/api/mission-control/overview`),
+      fetch(`${BACKEND_BASE}/api/connectors`)
+    ]);
+    const data = await overviewRes.json();
+    const connectorsData = await connectorsRes.json();
+    if (!overviewRes.ok || !data.ok) throw new Error(data.message || 'Failed to load overview');
 
+    const connectorCards = (connectorsData.connectors || []).map((connector) => `<div class="card"><h3>${connector.connectorId || connector.provider}</h3><div>${connector.health || 'unknown'}</div><div class="muted">${connector.lastSyncAt || 'no sync yet'}</div></div>`).join('');
     overviewEl.innerHTML = [
       `<div class="card"><h3>Connectors</h3><div>${data.connectors.total}</div><div class="muted">Healthy: ${data.connectors.healthy}</div></div>`,
       `<div class="card"><h3>Jobs</h3><div>${data.jobs.total}</div><div class="muted">Running: ${data.jobs.running} • Failed: ${data.jobs.failed}</div></div>`,
-      `<div class="card"><h3>Audit Events</h3><div>${data.audit.total}</div><div class="muted">Governance visibility layer</div></div>`
+      `<div class="card"><h3>Audit Events</h3><div>${data.audit.total}</div><div class="muted">Governance visibility layer</div></div>`,
+      connectorCards
     ].join('');
 
     jobsEl.innerHTML = (data.jobs.jobs || []).length

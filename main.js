@@ -157,11 +157,28 @@ function groupedSearchLabel(type) {
   return 'Other';
 }
 
-function openMemoryDetail(memory) {
+async function openMemoryDetail(memory) {
   const links = memory.rawPath && String(memory.rawPath).startsWith('http')
     ? [{ label: 'Open source', href: memory.rawPath }]
     : [];
-  setDetail(memory.title, [memory.summary, memory.excerpt || '', `Source: ${memory.rawPath || memory.sourceId || 'unknown'}`], links);
+
+  const lines = [memory.summary, memory.excerpt || '', `Source: ${memory.rawPath || memory.sourceId || 'unknown'}`];
+
+  try {
+    const canonicalId = memory.canonicalMemoryId || memory.memoryId;
+    if (canonicalId) {
+      const res = await fetch(`${BACKEND_BASE}/api/memory/${encodeURIComponent(canonicalId)}/provenance`);
+      const data = await res.json();
+      if (res.ok && data.ok && Array.isArray(data.provenance) && data.provenance.length) {
+        const prov = data.provenance[0];
+        lines.push(`Provenance: ${prov.provider || 'unknown'} • ${prov.kind || 'unknown'}`);
+        if (prov.path) lines.push(`Path: ${prov.path}`);
+        if (prov.url && !links.find((link) => link.href === prov.url)) links.push({ label: 'Open provenance', href: prov.url });
+      }
+    }
+  } catch {}
+
+  setDetail(memory.title, lines, links);
 }
 
 async function refreshHubData() {
@@ -402,7 +419,10 @@ saveMemoryBtn?.addEventListener('click', async () => {
     const data = await res.json();
     if (!res.ok || !data.ok) throw new Error(data.message || 'Save failed');
     memorySaveStatus.textContent = `Saved to ${data.path}`;
-    if (data.memory) insertLiveMemory(data.memory);
+    if (data.memory) {
+      if (data.canonicalMemory?.memoryId) data.memory.canonicalMemoryId = data.canonicalMemory.memoryId;
+      insertLiveMemory(data.memory);
+    }
     setDetail(title, [summary, `Tags: ${tags || 'none'}`, `Saved: ${data.path}`]);
     memoryTitle.value = '';
     memorySummary.value = '';

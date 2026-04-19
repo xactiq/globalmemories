@@ -480,7 +480,18 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method === 'GET' && req.url === '/api/connectors') {
     const store = loadPlatformStore();
-    return sendJson(res, 200, { ok: true, connectors: store?.connectors || [] });
+    const connectors = (store?.connectors || []).map((connector) => {
+      if (connector.connectorId === 'google-workspace') {
+        const status = getGoogleStatus();
+        return { ...connector, liveStatus: status.connectors, lastSyncAt: status.lastSyncAt, health: status.connected ? 'healthy' : connector.health || 'unknown' };
+      }
+      if (connector.connectorId === 'microsoft-graph') {
+        const status = getMicrosoftStatus();
+        return { ...connector, liveStatus: status.connectors, lastSyncAt: status.lastSyncAt, health: status.connected ? 'healthy' : connector.health || 'unknown' };
+      }
+      return connector;
+    });
+    return sendJson(res, 200, { ok: true, connectors });
   }
 
   if (req.method === 'GET' && req.url === '/api/jobs') {
