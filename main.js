@@ -147,7 +147,7 @@ function switchTab(name) {
 }
 
 function setDetail(title, lines = [], links = []) {
-  detailContent.innerHTML = `<h3>${title}</h3><p>${lines.join('</p><p>')}</p>${links.length ? `<div class="actions">${links.map((link) => `<a class="button" href="${link.href}" target="_blank" rel="noopener noreferrer">${link.label}</a>`).join('')}</div>` : ''}`;
+  detailContent.innerHTML = `<h3>${title}</h3><p>${lines.filter(Boolean).join('</p><p>')}</p>${links.length ? `<div class="actions">${links.map((link) => `<a class="button" href="${link.href}" target="_blank" rel="noopener noreferrer">${link.label}</a>`).join('')}</div>` : ''}`;
 }
 
 function renderSearchResults(query) {
@@ -190,7 +190,8 @@ function renderSearchResults(query) {
       if (result.type === 'memory') {
         setDetail(result.item.title, [result.item.summary, result.item.excerpt || '', `Source: ${result.item.rawPath}`]);
       } else if (result.type === 'source') {
-        setDetail(result.item.path, [`Kind: ${result.item.kind}`, `Platform: ${result.item.platform}`]);
+        const links = result.item.path.startsWith('http') ? [{ label: 'Open source', href: result.item.path }] : [];
+        setDetail(result.item.path, [`Kind: ${result.item.kind}`, `Platform: ${result.item.platform}`], links);
       } else {
         setDetail(result.item.label, [`Type: ${result.item.type}`, `Aliases: ${(result.item.aliases || []).join(', ') || 'none'}`]);
       }
@@ -326,7 +327,8 @@ canvas.addEventListener('click', (e) => {
     const memory = hub?.store?.memories?.find((m) => m.id === hit.id);
     const entity = hub?.store?.entities?.find((e) => e.id === hit.id);
     if (memory) {
-      setDetail(memory.title, [memory.summary, memory.excerpt || '', `Source: ${memory.rawPath}`]);
+      const links = memory.rawPath ? [{ label: 'Source path', href: memory.rawPath }] : [];
+      setDetail(memory.title, [memory.summary, memory.excerpt || '', `Source: ${memory.rawPath}`], links.filter((l) => l.href.startsWith('http')));
     } else if (entity) {
       setDetail(entity.label, [`Type: ${entity.type}`, `Aliases: ${(entity.aliases || []).join(', ') || 'none'}`]);
     } else {
@@ -337,7 +339,7 @@ canvas.addEventListener('click', (e) => {
 
 tabs.forEach((tab) => tab.addEventListener('click', () => switchTab(tab.dataset.tab)));
 searchInput?.addEventListener('input', (e) => renderSearchResults(e.target.value));
-saveMemoryBtn?.addEventListener('click', () => {
+saveMemoryBtn?.addEventListener('click', async () => {
   const title = memoryTitle.value.trim();
   const summary = memorySummary.value.trim();
   const tags = memoryTags.value.trim();
@@ -345,9 +347,23 @@ saveMemoryBtn?.addEventListener('click', () => {
     memorySaveStatus.textContent = 'Need at least a title and summary.';
     return;
   }
-  const note = `Title: ${title}\nSummary: ${summary}\nTags: ${tags || 'none'}`;
-  memorySaveStatus.textContent = `Memory draft captured. Next wiring step is persisting this automatically.\n\n${note}`;
-  setDetail(title, [summary, `Tags: ${tags || 'none'}`, 'Persistence hook is the next build step.']);
+  memorySaveStatus.textContent = 'Saving memory...';
+  try {
+    const res = await fetch(`${BACKEND_BASE}/api/memory/add`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, summary, tags })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.message || 'Save failed');
+    memorySaveStatus.textContent = `Saved to ${data.path}`;
+    setDetail(title, [summary, `Tags: ${tags || 'none'}`, `Saved: ${data.path}`]);
+    memoryTitle.value = '';
+    memorySummary.value = '';
+    memoryTags.value = '';
+  } catch (err) {
+    memorySaveStatus.textContent = `Save failed: ${err.message}`;
+  }
 });
 
 window.addEventListener('resize', resize);

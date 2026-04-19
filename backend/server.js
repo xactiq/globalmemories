@@ -1,6 +1,6 @@
 import http from 'node:http';
 import https from 'node:https';
-import { readFileSync, existsSync, writeFileSync } from 'node:fs';
+import { readFileSync, existsSync, writeFileSync, appendFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 const envPath = join(process.cwd(), '.env');
@@ -29,6 +29,8 @@ const tokenStorePath = join(process.cwd(), '.microsoft-tokens.json');
 const syncStorePath = join(process.cwd(), '.microsoft-sync.json');
 const googleTokenStorePath = join(process.cwd(), '.google-tokens.json');
 const googleSyncStorePath = join(process.cwd(), '.google-sync.json');
+const workspaceRoot = join(process.cwd(), '..');
+const workspaceMemoryDir = join(workspaceRoot, 'memory');
 const scopes = [
   'offline_access',
   'openid',
@@ -346,6 +348,29 @@ function extractFileId(reqUrl) {
   return url.searchParams.get('id') || '';
 }
 
+function readBody(req) {
+  return new Promise((resolve, reject) => {
+    let raw = '';
+    req.on('data', (chunk) => raw += chunk);
+    req.on('end', () => resolve(raw));
+    req.on('error', reject);
+  });
+}
+
+function appendMemoryEntry({ title, summary, tags }) {
+  mkdirSync(workspaceMemoryDir, { recursive: true });
+  const date = new Date().toISOString().slice(0, 10);
+  const path = join(workspaceMemoryDir, `${date}.md`);
+  const lines = [
+    `\n- Added via Memory Hub`,
+    `  - Title: ${title}`,
+    `  - Summary: ${summary}`,
+    `  - Tags: ${tags || 'none'}`
+  ];
+  appendFileSync(path, `${lines.join('\n')}\n`);
+  return path;
+}
+
 function getBuffer(url, accessToken, extraHeaders = {}) {
   return new Promise((resolve, reject) => {
     const parsed = new URL(url);
@@ -543,6 +568,24 @@ const server = http.createServer(async (req, res) => {
       });
     } catch (err) {
       return sendJson(res, 500, { ok: false, message: 'Drive file fetch failed.', error: String(err) });
+    }
+  }
+
+  if (req.method === 'POST' && req.url === '/api/memory/add') {
+    try {
+      const raw = await readBody(req);
+      const body = parseJsonMaybe(raw);
+      if (!body?.title || !body?.summary) {
+        return sendJson(res, 400, { ok: false, message: 'Need title and summary.' });
+      }
+      const savedPath = appendMemoryEntry({
+        title: String(body.title).trim(),
+        summary: String(body.summary).trim(),
+        tags: String(body.tags || '').trim()
+      });
+      return sendJson(res, 200, { ok: true, path: savedPath, message: 'Memory saved to workspace daily note.' });
+    } catch (err) {
+      return sendJson(res, 500, { ok: false, message: 'Failed to save memory.', error: String(err) });
     }
   }
 
