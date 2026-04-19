@@ -60,6 +60,18 @@
         border: 1px solid rgba(255,255,255,.08); border-radius: 10px; padding: 8px 10px; font-size: 12px;
       }
       .setting textarea { min-height: 72px; resize: vertical; }
+      .searchbox, .memory-form textarea, .memory-form input {
+        width: 100%; box-sizing: border-box; background: rgba(255,255,255,.04); color: white;
+        border: 1px solid rgba(255,255,255,.08); border-radius: 10px; padding: 10px 12px; font-size: 13px;
+      }
+      .memory-form { display: grid; gap: 8px; }
+      .detail-drawer {
+        position: absolute; left: 16px; bottom: 16px; width: min(420px, calc(100vw - 32px)); max-height: 42vh; overflow: auto;
+        background: rgba(7,17,31,.9); border: 1px solid rgba(255,255,255,.12); border-radius: 14px; padding: 14px 16px; backdrop-filter: blur(10px);
+      }
+      .detail-drawer h3 { margin: 0 0 8px; font-size: 15px; }
+      .detail-drawer p { margin: 0 0 8px; font-size: 13px; line-height: 1.5; color: #bfd0ee; }
+      .detail-drawer a { color: #93c5fd; }
     </style>
   </head>
   <body>
@@ -83,6 +95,8 @@
           <button class="tab active" data-tab="connectors">Connectors</button>
           <button class="tab" data-tab="sources">Sources</button>
           <button class="tab" data-tab="memories">Memories</button>
+          <button class="tab" data-tab="search">Search</button>
+          <button class="tab" data-tab="add-memory">Add memory</button>
           <button class="tab" data-tab="settings">Settings</button>
         </div>
 
@@ -101,10 +115,31 @@
           <div class="list" id="memories"></div>
         </div>
 
+        <div class="section hidden" id="tab-search">
+          <h2>Search memory</h2>
+          <input id="searchInput" class="searchbox" placeholder="Find resume, telegram setup, xactiq, docs..." />
+          <div class="list" id="searchResults" style="margin-top:10px"></div>
+        </div>
+
+        <div class="section hidden" id="tab-add-memory">
+          <h2>Add memory</h2>
+          <div class="memory-form">
+            <input id="memoryTitle" placeholder="Memory title" />
+            <textarea id="memorySummary" placeholder="What should the system remember?"></textarea>
+            <input id="memoryTags" placeholder="Tags, people, topics, comma separated" />
+            <div class="actions"><button class="button" id="saveMemoryBtn">Save memory note</button></div>
+            <div class="muted" id="memorySaveStatus">Saves to the workspace memory file flow next.</div>
+          </div>
+        </div>
+
         <div class="section hidden" id="tab-settings">
           <h2>Connector settings</h2>
           <div class="settings-grid" id="settings"></div>
         </div>
+      </div>
+      <div class="detail-drawer" id="detailDrawer">
+        <h3>Detail</h3>
+        <div id="detailContent">Click a node or search result to inspect a memory, source, or connector snapshot.</div>
       </div>
       <canvas id="scene"></canvas>
     </div>

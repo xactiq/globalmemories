@@ -8,6 +8,14 @@ const memoriesEl = document.getElementById('memories');
 const settingsEl = document.getElementById('settings');
 const topchips = document.getElementById('topchips');
 const tabs = [...document.querySelectorAll('.tab')];
+const searchInput = document.getElementById('searchInput');
+const searchResults = document.getElementById('searchResults');
+const detailContent = document.getElementById('detailContent');
+const memoryTitle = document.getElementById('memoryTitle');
+const memorySummary = document.getElementById('memorySummary');
+const memoryTags = document.getElementById('memoryTags');
+const saveMemoryBtn = document.getElementById('saveMemoryBtn');
+const memorySaveStatus = document.getElementById('memorySaveStatus');
 
 let width = 0;
 let height = 0;
@@ -133,8 +141,60 @@ function draw() {
 
 function switchTab(name) {
   tabs.forEach((tab) => tab.classList.toggle('active', tab.dataset.tab === name));
-  ['connectors', 'sources', 'memories', 'settings'].forEach((section) => {
+  ['connectors', 'sources', 'memories', 'search', 'add-memory', 'settings'].forEach((section) => {
     document.getElementById(`tab-${section}`).classList.toggle('hidden', section !== name);
+  });
+}
+
+function setDetail(title, lines = [], links = []) {
+  detailContent.innerHTML = `<h3>${title}</h3><p>${lines.join('</p><p>')}</p>${links.length ? `<div class="actions">${links.map((link) => `<a class="button" href="${link.href}" target="_blank" rel="noopener noreferrer">${link.label}</a>`).join('')}</div>` : ''}`;
+}
+
+function renderSearchResults(query) {
+  if (!hub) return;
+  const q = query.trim().toLowerCase();
+  if (!q) {
+    searchResults.innerHTML = '<div class="card"><strong>Search the memory graph</strong><div class="muted">Try names, projects, topics, docs, or files.</div></div>';
+    return;
+  }
+
+  const results = [];
+  for (const memory of hub.store.memories || []) {
+    const blob = `${memory.title} ${memory.summary} ${memory.excerpt || ''}`.toLowerCase();
+    if (blob.includes(q)) results.push({ type: 'memory', item: memory });
+  }
+  for (const source of hub.store.sources || []) {
+    const blob = `${source.path} ${source.kind} ${source.platform}`.toLowerCase();
+    if (blob.includes(q)) results.push({ type: 'source', item: source });
+  }
+  for (const entity of hub.store.entities || []) {
+    const blob = `${entity.label} ${(entity.aliases || []).join(' ')}`.toLowerCase();
+    if (blob.includes(q)) results.push({ type: 'entity', item: entity });
+  }
+
+  if (!results.length) {
+    searchResults.innerHTML = '<div class="card"><strong>No results</strong><div class="muted">Try a broader term.</div></div>';
+    return;
+  }
+
+  searchResults.innerHTML = results.slice(0, 12).map((result, index) => {
+    const label = result.type === 'memory' ? result.item.title : result.type === 'source' ? result.item.path : result.item.label;
+    const meta = result.type === 'memory' ? `${result.item.timestamp} • ${result.item.platform}` : result.type === 'source' ? `${result.item.kind} • ${result.item.platform}` : result.item.type;
+    return `<button class="card search-result" data-result-index="${index}" style="text-align:left; cursor:pointer"><strong>${label}</strong><div class="muted">${meta}</div></button>`;
+  }).join('');
+
+  [...document.querySelectorAll('.search-result')].forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const result = results[Number(btn.dataset.resultIndex)];
+      if (!result) return;
+      if (result.type === 'memory') {
+        setDetail(result.item.title, [result.item.summary, result.item.excerpt || '', `Source: ${result.item.rawPath}`]);
+      } else if (result.type === 'source') {
+        setDetail(result.item.path, [`Kind: ${result.item.kind}`, `Platform: ${result.item.platform}`]);
+      } else {
+        setDetail(result.item.label, [`Type: ${result.item.type}`, `Aliases: ${(result.item.aliases || []).join(', ') || 'none'}`]);
+      }
+    });
   });
 }
 
@@ -261,10 +321,34 @@ canvas.addEventListener('click', (e) => {
     const d = Math.hypot(node.x - x, node.y - y);
     if (d < 20 * devicePixelRatio && d < best) { best = d; hit = node; }
   }
-  if (hit) details.textContent = `${hit.label} (${hit.group})${hit.file ? ` • ${hit.file}` : ''}`;
+  if (hit) {
+    details.textContent = `${hit.label} (${hit.group})${hit.file ? ` • ${hit.file}` : ''}`;
+    const memory = hub?.store?.memories?.find((m) => m.id === hit.id);
+    const entity = hub?.store?.entities?.find((e) => e.id === hit.id);
+    if (memory) {
+      setDetail(memory.title, [memory.summary, memory.excerpt || '', `Source: ${memory.rawPath}`]);
+    } else if (entity) {
+      setDetail(entity.label, [`Type: ${entity.type}`, `Aliases: ${(entity.aliases || []).join(', ') || 'none'}`]);
+    } else {
+      setDetail(hit.label, [`Group: ${hit.group}`, hit.file ? `File: ${hit.file}` : '']);
+    }
+  }
 });
 
 tabs.forEach((tab) => tab.addEventListener('click', () => switchTab(tab.dataset.tab)));
+searchInput?.addEventListener('input', (e) => renderSearchResults(e.target.value));
+saveMemoryBtn?.addEventListener('click', () => {
+  const title = memoryTitle.value.trim();
+  const summary = memorySummary.value.trim();
+  const tags = memoryTags.value.trim();
+  if (!title || !summary) {
+    memorySaveStatus.textContent = 'Need at least a title and summary.';
+    return;
+  }
+  const note = `Title: ${title}\nSummary: ${summary}\nTags: ${tags || 'none'}`;
+  memorySaveStatus.textContent = `Memory draft captured. Next wiring step is persisting this automatically.\n\n${note}`;
+  setDetail(title, [summary, `Tags: ${tags || 'none'}`, 'Persistence hook is the next build step.']);
+});
 
 window.addEventListener('resize', resize);
 resize();
@@ -288,6 +372,7 @@ fetch('./hub-data.json')
   .then((data) => {
     hub = data;
     renderHub();
+    renderSearchResults('');
     loadBackendStatus();
   })
   .catch((err) => {
