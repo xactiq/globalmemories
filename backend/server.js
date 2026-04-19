@@ -336,6 +336,11 @@ function summarizeGoogleDrive(items = []) {
   }));
 }
 
+function extractQuery(reqUrl) {
+  const url = new URL(reqUrl, `http://localhost:${port}`);
+  return url.searchParams.get('q') || url.searchParams.get('query') || '';
+}
+
 const server = http.createServer(async (req, res) => {
   if (!req.url) return sendJson(res, 400, { error: 'Missing URL' });
   if (req.method === 'OPTIONS') return sendJson(res, 200, { ok: true });
@@ -354,7 +359,9 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 200, {
       status,
       connect: { url: '/api/connectors/google/connect', method: 'POST' },
-      sync: { url: '/api/connectors/google/sync', method: 'POST' }
+      sync: { url: '/api/connectors/google/sync', method: 'POST' },
+      searchDrive: { url: '/api/connectors/google/drive/search?q=resume', method: 'GET' },
+      searchGmail: { url: '/api/connectors/google/gmail/search?q=resume', method: 'GET' }
     });
   }
 
@@ -417,6 +424,49 @@ const server = http.createServer(async (req, res) => {
       return sendHtml(res, 200, '<h1>Microsoft connected</h1><p>You can return to Memory Hub now.</p>');
     } catch (err) {
       return sendHtml(res, 500, `<h1>Callback error</h1><pre>${String(err)}</pre>`);
+    }
+  }
+
+  if (req.method === 'GET' && req.url.startsWith('/api/connectors/google/drive/search')) {
+    const query = extractQuery(req.url).trim();
+    if (!query) return sendJson(res, 400, { ok: false, message: 'Missing search query. Use ?q=resume' });
+    try {
+      const tokenStore = await refreshGoogleAccessTokenIfNeeded();
+      const accessToken = tokenStore?.access_token;
+      if (!accessToken) return sendJson(res, 500, { ok: false, message: 'No Google access token available after refresh.' });
+      const q = encodeURIComponent(`name contains '${query.replace(/'/g, "\\'")}'`);
+      const response = await getJson(`https://www.googleapis.com/drive/v3/files?q=${q}&pageSize=10&fields=files(id,name,mimeType,modifiedTime,webViewLink)`, accessToken);
+      if (response.status >= 400 || !response.json) {
+        return sendJson(res, response.status >= 400 ? response.status : 502, { ok: false, message: 'Drive search failed.', error: response.json || response.raw || null });
+      }
+      return sendJson(res, 200, {
+        ok: true,
+        query,
+        results: summarizeGoogleDrive(response.json.files || [])
+      });
+    } catch (err) {
+      return sendJson(res, 500, { ok: false, message: 'Drive search failed.', error: String(err) });
+    }
+  }
+
+  if (req.method === 'GET' && req.url.startsWith('/api/connectors/google/gmail/search')) {
+    const query = extractQuery(req.url).trim();
+    if (!query) return sendJson(res, 400, { ok: false, message: 'Missing search query. Use ?q=resume' });
+    try {
+      const tokenStore = await refreshGoogleAccessTokenIfNeeded();
+      const accessToken = tokenStore?.access_token;
+      if (!accessToken) return sendJson(res, 500, { ok: false, message: 'No Google access token available after refresh.' });
+      const response = await getJson(`https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(query)}&maxResults=10`, accessToken);
+      if (response.status >= 400 || !response.json) {
+        return sendJson(res, response.status >= 400 ? response.status : 502, { ok: false, message: 'Gmail search failed.', error: response.json || response.raw || null });
+      }
+      return sendJson(res, 200, {
+        ok: true,
+        query,
+        results: summarizeGmail(response.json.messages || [])
+      });
+    } catch (err) {
+      return sendJson(res, 500, { ok: false, message: 'Gmail search failed.', error: String(err) });
     }
   }
 
