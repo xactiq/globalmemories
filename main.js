@@ -21,6 +21,7 @@ let graph = { nodes: [], links: [] };
 let projected = [];
 let hub = null;
 let backendStatus = null;
+let googleBackendStatus = null;
 
 const BACKEND_BASE = 'http://localhost:8787';
 
@@ -140,12 +141,25 @@ function switchTab(name) {
 function renderSettings(connectors) {
   settingsEl.innerHTML = connectors.map((connector) => {
     const microsoft = backendStatus?.status?.connectors || {};
-    const liveState = connector.id === 'outlook' ? microsoft.outlook : connector.id === 'onedrive' ? microsoft.onedrive : null;
-    const accountLabel = backendStatus?.status?.accountLabel || 'No backend account';
-    const lastSyncAt = backendStatus?.status?.lastSyncAt || 'No sync yet';
+    const google = googleBackendStatus?.status?.connectors || {};
+    const liveState = connector.id === 'outlook' ? microsoft.outlook
+      : connector.id === 'onedrive' ? microsoft.onedrive
+      : connector.id === 'google-gmail' ? google.gmail
+      : connector.id === 'google-calendar' ? google.calendar
+      : connector.id === 'google-drive' ? google.drive
+      : null;
+    const accountLabel = connector.type === 'google-workspace'
+      ? (googleBackendStatus?.status?.accountLabel || 'No backend account')
+      : (backendStatus?.status?.accountLabel || 'No backend account');
+    const lastSyncAt = connector.type === 'google-workspace'
+      ? (googleBackendStatus?.status?.lastSyncAt || 'No sync yet')
+      : (backendStatus?.status?.lastSyncAt || 'No sync yet');
+    const endpoint = connector.type === 'google-workspace'
+      ? `${BACKEND_BASE}/api/connectors/google/status`
+      : `${BACKEND_BASE}/api/connectors/microsoft/status`;
     const statusLine = liveState ? `${connector.status} • backend: ${liveState}` : `${connector.status} • ${connector.syncMode}`;
-    const placeholder = connector.type === 'microsoft-graph'
-      ? `Account: ${accountLabel}\nLast sync: ${lastSyncAt}\nBackend endpoint: ${BACKEND_BASE}/api/connectors/microsoft/status`
+    const placeholder = connector.type === 'microsoft-graph' || connector.type === 'google-workspace'
+      ? `Account: ${accountLabel}\nLast sync: ${lastSyncAt}\nBackend endpoint: ${endpoint}`
       : 'Local connector, no OAuth required.';
     return `<div class="setting"><label>${connector.label}</label><input value="${statusLine}" readonly /><textarea readonly>${connector.notes || ''}\n\n${placeholder}</textarea><div class="actions"><span class="button">${connector.enabled ? 'Enabled' : 'Disabled'}</span><span class="button">${connector.type}</span></div></div>`;
   }).join('');
@@ -163,32 +177,64 @@ function renderHub() {
     `<span class="chip">${hub.counts.relationships} relationships</span>`
   ].join('');
 
+  const googleSnapshot = hub.connectorSnapshots?.google;
+  const microsoftSnapshot = hub.connectorSnapshots?.microsoft;
   connectorsEl.innerHTML = hub.connectors.map((connector) => {
     const tone = connector.status === 'active' ? 'ok' : connector.status === 'planned' ? 'planned' : 'warning';
     const action = connector.enabled ? 'Connected' : 'Planned';
-    return `<div class="card"><strong>${connector.label}</strong><div class="muted ${tone}">${connector.status} • ${connector.syncMode}</div><div class="muted">${connector.notes || ''}</div><div class="actions"><span class="button">${action}</span><span class="button">${connector.type}</span></div></div>`;
+    const snapshotText = connector.type === 'google-workspace' && googleSnapshot
+      ? `Last sync: ${googleSnapshot.synced_at || 'n/a'} • Gmail ${googleSnapshot.summary?.gmailMessages ?? 0}, Calendar ${googleSnapshot.summary?.upcomingEvents ?? 0}, Drive ${googleSnapshot.summary?.driveItems ?? 0}`
+      : connector.type === 'microsoft-graph' && microsoftSnapshot
+        ? `Last sync: ${microsoftSnapshot.synced_at || 'n/a'} • Mail ${microsoftSnapshot.summary?.recentMessages ?? 0}, Calendar ${microsoftSnapshot.summary?.upcomingEvents ?? 0}, Drive ${microsoftSnapshot.summary?.driveItems ?? 0}`
+        : connector.notes || '';
+    return `<div class="card"><strong>${connector.label}</strong><div class="muted ${tone}">${connector.status} • ${connector.syncMode}</div><div class="muted">${snapshotText}</div><div class="actions"><span class="button">${action}</span><span class="button">${connector.type}</span></div></div>`;
   }).join('');
 
-  sourcesEl.innerHTML = hub.store.sources.slice(0, 12).map((source) => {
+  const sourceCards = hub.store.sources.slice(0, 12).map((source) => {
     return `<div class="card"><strong>${source.path}</strong><div class="muted">${source.kind} • ${source.platform}</div><div class="actions"><span class="button">${source.id}</span></div></div>`;
-  }).join('');
+  });
+  if (googleSnapshot?.profile) {
+    sourceCards.unshift(`<div class="card"><strong>Google Workspace</strong><div class="muted">oauth-sync • google</div><div class="muted">${googleSnapshot.profile.email || 'unknown account'} • ${googleSnapshot.synced_at || 'no sync time'}</div><div class="actions"><span class="button">gmail</span><span class="button">calendar</span><span class="button">drive</span></div></div>`);
+  }
+  sourcesEl.innerHTML = sourceCards.join('');
 
-  memoriesEl.innerHTML = hub.store.memories.slice(0, 8).map((memory) => {
+  const memoryCards = hub.store.memories.slice(0, 8).map((memory) => {
     return `<div class="card"><strong>${memory.title}</strong><div class="muted">${memory.timestamp} • ${memory.platform}</div><div class="muted">${memory.summary}</div><div class="actions"><span class="button">${memory.sourceId}</span></div></div>`;
-  }).join('');
+  });
+  if (googleSnapshot) {
+    memoryCards.unshift(`<div class="card"><strong>Google Workspace Snapshot</strong><div class="muted">${googleSnapshot.synced_at || 'unknown'} • google</div><div class="muted">Profile: ${googleSnapshot.profile?.email || 'unknown'} • Gmail ${googleSnapshot.summary?.gmailMessages ?? 0} • Calendar ${googleSnapshot.summary?.upcomingEvents ?? 0} • Drive ${googleSnapshot.summary?.driveItems ?? 0}</div><div class="actions"><span class="button">google-sync</span></div></div>`);
+  }
+  memoriesEl.innerHTML = memoryCards.join('');
 
   renderSettings(hub.connectors);
 }
 
 async function loadBackendStatus() {
   try {
-    const res = await fetch(`${BACKEND_BASE}/api/connectors/microsoft/status`);
-    if (!res.ok) throw new Error(`Backend status ${res.status}`);
-    backendStatus = await res.json();
-    if (hub) renderSettings(hub.connectors);
+    const [microsoftRes, googleRes] = await Promise.all([
+      fetch(`${BACKEND_BASE}/api/connectors/microsoft/status`).catch(() => null),
+      fetch(`${BACKEND_BASE}/api/connectors/google/status`).catch(() => null)
+    ]);
+
+    if (microsoftRes?.ok) {
+      backendStatus = await microsoftRes.json();
+    } else {
+      backendStatus = null;
+    }
+
+    if (googleRes?.ok) {
+      googleBackendStatus = await googleRes.json();
+    } else {
+      googleBackendStatus = null;
+    }
+
+    if (hub) {
+      renderHub();
+    }
   } catch {
     backendStatus = null;
-    if (hub) renderSettings(hub.connectors);
+    googleBackendStatus = null;
+    if (hub) renderHub();
   }
 }
 

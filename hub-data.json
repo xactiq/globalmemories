@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-18T18:15:47.148Z",
+  "generatedAt": "2026-04-19T00:13:42.410Z",
   "connectors": [
     {
       "id": "workspace-memory",
@@ -20,31 +20,401 @@
       "notes": "Reads graph-friendly notes from obsidian-vault/."
     },
     {
+      "id": "google-gmail",
+      "label": "Google Workspace Gmail",
+      "type": "google-workspace",
+      "enabled": false,
+      "status": "planned",
+      "syncMode": "oauth",
+      "notes": "Planned primary connector for Gmail message sync through Google Workspace."
+    },
+    {
+      "id": "google-calendar",
+      "label": "Google Workspace Calendar",
+      "type": "google-workspace",
+      "enabled": false,
+      "status": "planned",
+      "syncMode": "oauth",
+      "notes": "Planned primary connector for Google Calendar events through Google Workspace."
+    },
+    {
+      "id": "google-drive",
+      "label": "Google Workspace Drive",
+      "type": "google-workspace",
+      "enabled": false,
+      "status": "planned",
+      "syncMode": "oauth",
+      "notes": "Planned primary connector for Google Drive files and folders through Google Workspace."
+    },
+    {
       "id": "outlook",
       "label": "Microsoft Outlook",
       "type": "microsoft-graph",
       "enabled": false,
-      "status": "planned",
+      "status": "experimental",
       "syncMode": "oauth",
-      "notes": "Planned connector for Outlook mail and calendar through Microsoft Graph."
+      "notes": "Experimental connector. Identity works, but tenant/mailbox access varies by account and license."
     },
     {
       "id": "onedrive",
       "label": "Microsoft OneDrive",
       "type": "microsoft-graph",
       "enabled": false,
-      "status": "planned",
+      "status": "experimental",
       "syncMode": "oauth",
-      "notes": "Planned connector for OneDrive files and folders through Microsoft Graph."
+      "notes": "Experimental connector. Some accounts may not have SharePoint/OneDrive licensing."
     }
   ],
   "counts": {
-    "connectors": 4,
+    "connectors": 7,
     "entities": 9,
     "memories": 2,
     "relationships": 9,
     "conversations": 2,
     "sources": 25
+  },
+  "connectorSnapshots": {
+    "google": {
+      "synced_at": "2026-04-19T00:07:41.806Z",
+      "issues": [],
+      "profile": {
+        "email": "admin@xactiq.net",
+        "name": "Logan McEntire",
+        "picture": "https://lh3.googleusercontent.com/a/ACg8ocIgg30QAdTRlWhhxSSrpO_Ppktg942aSrB8Nb9HgOOz46mFhg=s96-c",
+        "sub": "108259322955966267653"
+      },
+      "summary": {
+        "gmailMessages": 10,
+        "upcomingEvents": 10,
+        "driveItems": 20
+      },
+      "gmail": [
+        {
+          "id": "19da269807e24cf4",
+          "threadId": "19da2695151ac8d0",
+          "snippet": ""
+        },
+        {
+          "id": "19da26698c7cdc8b",
+          "threadId": "19da26698c7cdc8b",
+          "snippet": ""
+        },
+        {
+          "id": "19da188ae91c09a3",
+          "threadId": "19da138566c12023",
+          "snippet": ""
+        },
+        {
+          "id": "19da1885f730119f",
+          "threadId": "19da1885f730119f",
+          "snippet": ""
+        },
+        {
+          "id": "19da187dbd4dad5f",
+          "threadId": "19da187dbd4dad5f",
+          "snippet": ""
+        },
+        {
+          "id": "19da17f593b36e86",
+          "threadId": "19da17f593b36e86",
+          "snippet": ""
+        },
+        {
+          "id": "19da17768e980e37",
+          "threadId": "19da17768e980e37",
+          "snippet": ""
+        },
+        {
+          "id": "19da1621981753cd",
+          "threadId": "19da15be5c27546e",
+          "snippet": ""
+        },
+        {
+          "id": "19da15be5c27546e",
+          "threadId": "19da15be5c27546e",
+          "snippet": ""
+        },
+        {
+          "id": "19da1541116f95c6",
+          "threadId": "19da1541116f95c6",
+          "snippet": ""
+        }
+      ],
+      "calendar": [
+        {
+          "id": "mm2phrijqterksmp24drflmbf8_20260420",
+          "summary": "Home",
+          "start": "2026-04-20",
+          "end": "2026-04-21",
+          "htmlLink": "https://www.google.com/calendar/event?eid=bW0ycGhyaWpxdGVya3NtcDI0ZHJmbG1iZjhfMjAyNjA0MjAgYWRtaW5AeGFjdGlxLm5ldA"
+        },
+        {
+          "id": "l3gikoacjca85q7149o81k71uk_20260421",
+          "summary": "Home",
+          "start": "2026-04-21",
+          "end": "2026-04-22",
+          "htmlLink": "https://www.google.com/calendar/event?eid=bDNnaWtvYWNqY2E4NXE3MTQ5bzgxazcxdWtfMjAyNjA0MjEgYWRtaW5AeGFjdGlxLm5ldA"
+        },
+        {
+          "id": "bj51995mi3328o5e5rdbfu7aus_20260422",
+          "summary": "Home",
+          "start": "2026-04-22",
+          "end": "2026-04-23",
+          "htmlLink": "https://www.google.com/calendar/event?eid=Ymo1MTk5NW1pMzMyOG81ZTVyZGJmdTdhdXNfMjAyNjA0MjIgYWRtaW5AeGFjdGlxLm5ldA"
+        },
+        {
+          "id": "4d5j861tsttugcjpuj1dg4ftqo_20260423",
+          "summary": "Home",
+          "start": "2026-04-23",
+          "end": "2026-04-24",
+          "htmlLink": "https://www.google.com/calendar/event?eid=NGQ1ajg2MXRzdHR1Z2NqcHVqMWRnNGZ0cW9fMjAyNjA0MjMgYWRtaW5AeGFjdGlxLm5ldA"
+        },
+        {
+          "id": "o0qc05oadoka9m7pjua3pcfca8_20260424",
+          "summary": "Home",
+          "start": "2026-04-24",
+          "end": "2026-04-25",
+          "htmlLink": "https://www.google.com/calendar/event?eid=bzBxYzA1b2Fkb2thOW03cGp1YTNwY2ZjYThfMjAyNjA0MjQgYWRtaW5AeGFjdGlxLm5ldA"
+        },
+        {
+          "id": "mm2phrijqterksmp24drflmbf8_20260427",
+          "summary": "Home",
+          "start": "2026-04-27",
+          "end": "2026-04-28",
+          "htmlLink": "https://www.google.com/calendar/event?eid=bW0ycGhyaWpxdGVya3NtcDI0ZHJmbG1iZjhfMjAyNjA0MjcgYWRtaW5AeGFjdGlxLm5ldA"
+        },
+        {
+          "id": "l3gikoacjca85q7149o81k71uk_20260428",
+          "summary": "Home",
+          "start": "2026-04-28",
+          "end": "2026-04-29",
+          "htmlLink": "https://www.google.com/calendar/event?eid=bDNnaWtvYWNqY2E4NXE3MTQ5bzgxazcxdWtfMjAyNjA0MjggYWRtaW5AeGFjdGlxLm5ldA"
+        },
+        {
+          "id": "bj51995mi3328o5e5rdbfu7aus_20260429",
+          "summary": "Home",
+          "start": "2026-04-29",
+          "end": "2026-04-30",
+          "htmlLink": "https://www.google.com/calendar/event?eid=Ymo1MTk5NW1pMzMyOG81ZTVyZGJmdTdhdXNfMjAyNjA0MjkgYWRtaW5AeGFjdGlxLm5ldA"
+        },
+        {
+          "id": "4d5j861tsttugcjpuj1dg4ftqo_20260430",
+          "summary": "Home",
+          "start": "2026-04-30",
+          "end": "2026-05-01",
+          "htmlLink": "https://www.google.com/calendar/event?eid=NGQ1ajg2MXRzdHR1Z2NqcHVqMWRnNGZ0cW9fMjAyNjA0MzAgYWRtaW5AeGFjdGlxLm5ldA"
+        },
+        {
+          "id": "o0qc05oadoka9m7pjua3pcfca8_20260501",
+          "summary": "Home",
+          "start": "2026-05-01",
+          "end": "2026-05-02",
+          "htmlLink": "https://www.google.com/calendar/event?eid=bzBxYzA1b2Fkb2thOW03cGp1YTNwY2ZjYThfMjAyNjA1MDEgYWRtaW5AeGFjdGlxLm5ldA"
+        }
+      ],
+      "drive": [
+        {
+          "id": "1-olOsllwDeXOI6mSVJHF8s0CbrmK7GCa",
+          "name": "BOEM-2025-0483-3818_attachment_1.pdf",
+          "mimeType": "application/pdf",
+          "modifiedTime": "2026-04-17T04:18:07.120Z",
+          "webViewLink": "https://drive.google.com/file/d/1-olOsllwDeXOI6mSVJHF8s0CbrmK7GCa/view?usp=drivesdk"
+        },
+        {
+          "id": "1EmdR_ggFjZtjW8KaI0DG4mB4LxFro2qY",
+          "name": "invoice.pdf",
+          "mimeType": "application/pdf",
+          "modifiedTime": "2026-04-03T23:17:45.032Z",
+          "webViewLink": "https://drive.google.com/file/d/1EmdR_ggFjZtjW8KaI0DG4mB4LxFro2qY/view?usp=drivesdk"
+        },
+        {
+          "id": "1cBJIzBLuBjJVj0qKLi_zYhmb1ELdKqfZ",
+          "name": "expenses.pdf",
+          "mimeType": "application/pdf",
+          "modifiedTime": "2026-04-02T20:28:33.239Z",
+          "webViewLink": "https://drive.google.com/file/d/1cBJIzBLuBjJVj0qKLi_zYhmb1ELdKqfZ/view?usp=drivesdk"
+        },
+        {
+          "id": "1CldYhzG4dU_-kWhfm0c_MmUJeWEHPdDH",
+          "name": "Daniel Philhower-Contract.pdf",
+          "mimeType": "application/pdf",
+          "modifiedTime": "2026-03-29T12:35:12.506Z",
+          "webViewLink": "https://drive.google.com/file/d/1CldYhzG4dU_-kWhfm0c_MmUJeWEHPdDH/view?usp=drivesdk"
+        },
+        {
+          "id": "1DKB2zI_m4MiHaCAwXoGQ99oMMLHhYyrM",
+          "name": "invoice.pdf",
+          "mimeType": "application/pdf",
+          "modifiedTime": "2026-03-24T21:19:09.807Z",
+          "webViewLink": "https://drive.google.com/file/d/1DKB2zI_m4MiHaCAwXoGQ99oMMLHhYyrM/view?usp=drivesdk"
+        },
+        {
+          "id": "1ffEpmlqoOtlysC7XQ_NluqaRsfyYdOKMemspBcrAtFQ",
+          "name": "Wang supplement letter",
+          "mimeType": "application/vnd.google-apps.document",
+          "modifiedTime": "2026-03-21T18:43:49.538Z",
+          "webViewLink": "https://docs.google.com/document/d/1ffEpmlqoOtlysC7XQ_NluqaRsfyYdOKMemspBcrAtFQ/edit?usp=drivesdk"
+        },
+        {
+          "id": "1fU8pfsnSr_DCL_4ZMX8VfgYUTS2PwS5rHjPVUZNhZqc",
+          "name": "Untitled document",
+          "mimeType": "application/vnd.google-apps.document",
+          "modifiedTime": "2026-03-19T01:13:47.527Z",
+          "webViewLink": "https://docs.google.com/document/d/1fU8pfsnSr_DCL_4ZMX8VfgYUTS2PwS5rHjPVUZNhZqc/edit?usp=drivesdk"
+        },
+        {
+          "id": "1tnazetXAAaQ3kXO1O82iHRNKA99orpkYJJAnAqRSw4E",
+          "name": "ee37b6d37_commission_agreement_logan_justin",
+          "mimeType": "application/vnd.google-apps.document",
+          "modifiedTime": "2026-03-17T16:01:20.283Z",
+          "webViewLink": "https://docs.google.com/document/d/1tnazetXAAaQ3kXO1O82iHRNKA99orpkYJJAnAqRSw4E/edit?usp=drivesdk"
+        },
+        {
+          "id": "1QduG4ijz6zXM-kU_eEcHQeteZbHBYJ-q",
+          "name": "ee37b6d37_commission_agreement_logan_justin.html",
+          "mimeType": "text/html",
+          "modifiedTime": "2026-03-17T15:38:12.114Z",
+          "webViewLink": "https://drive.google.com/file/d/1QduG4ijz6zXM-kU_eEcHQeteZbHBYJ-q/view?usp=drivesdk"
+        },
+        {
+          "id": "1ds_gGweHIWxXx5bUch5vL8SeAn_asCQ_3aoUsY0ssTc",
+          "name": "February Minutes",
+          "mimeType": "application/vnd.google-apps.document",
+          "modifiedTime": "2026-03-16T01:10:44.826Z",
+          "webViewLink": "https://docs.google.com/document/d/1ds_gGweHIWxXx5bUch5vL8SeAn_asCQ_3aoUsY0ssTc/edit?usp=drivesdk"
+        },
+        {
+          "id": "1QfwIEJPytRbRIUNivBBjUwcPIyv_RdOv",
+          "name": "Notes_260313_075946.docx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          "modifiedTime": "2026-03-13T13:25:03.413Z",
+          "webViewLink": "https://docs.google.com/document/d/1QfwIEJPytRbRIUNivBBjUwcPIyv_RdOv/edit?usp=drivesdk&ouid=108259322955966267653&rtpof=true&sd=true"
+        },
+        {
+          "id": "1DFp7CJDe9hs5St_lLNDGJc8POI3q8LO-",
+          "name": "Notes_260313_075946 (2).docx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          "modifiedTime": "2026-03-13T13:02:48.580Z",
+          "webViewLink": "https://docs.google.com/document/d/1DFp7CJDe9hs5St_lLNDGJc8POI3q8LO-/edit?usp=drivesdk&ouid=108259322955966267653&rtpof=true&sd=true"
+        },
+        {
+          "id": "1QSbYTfOzP5Q1YAvKISCpEmtIwjoLHwFP",
+          "name": "ee37b6d37_commission_agreement_logan_justin.html",
+          "mimeType": "text/html",
+          "modifiedTime": "2026-03-12T17:16:34.781Z",
+          "webViewLink": "https://drive.google.com/file/d/1QSbYTfOzP5Q1YAvKISCpEmtIwjoLHwFP/view?usp=drivesdk"
+        },
+        {
+          "id": "1ThjrumL4yi6gKiE19iCHXJd0nGgf04Rm",
+          "name": "Saved from Chrome",
+          "mimeType": "application/vnd.google-apps.folder",
+          "modifiedTime": "2026-03-12T17:16:33.546Z",
+          "webViewLink": "https://drive.google.com/drive/folders/1ThjrumL4yi6gKiE19iCHXJd0nGgf04Rm"
+        },
+        {
+          "id": "1k2CNJNB3RCYbTZQOwO7_qJu_2vAn7L0n",
+          "name": "Roofing Estimate - 620 N SPRING AV.pdf",
+          "mimeType": "application/pdf",
+          "modifiedTime": "2026-03-09T04:11:25.063Z",
+          "webViewLink": "https://drive.google.com/file/d/1k2CNJNB3RCYbTZQOwO7_qJu_2vAn7L0n/view?usp=drivesdk"
+        },
+        {
+          "id": "17hTbKC6VuOwYZDgPNN3EIRKu7F7lM40zCNeej8HKPT0",
+          "name": "Untitled document",
+          "mimeType": "application/vnd.google-apps.document",
+          "modifiedTime": "2026-03-07T13:12:27.792Z",
+          "webViewLink": "https://docs.google.com/document/d/17hTbKC6VuOwYZDgPNN3EIRKu7F7lM40zCNeej8HKPT0/edit?usp=drivesdk"
+        },
+        {
+          "id": "11ylCnTNh1sTRvOdiCAP-dOjcFupF-hJV",
+          "name": "Atlas",
+          "mimeType": "application/octet-stream",
+          "modifiedTime": "2026-03-07T13:07:44.101Z",
+          "webViewLink": "https://drive.google.com/file/d/11ylCnTNh1sTRvOdiCAP-dOjcFupF-hJV/view?usp=drivesdk"
+        },
+        {
+          "id": "1I3ON0kP8__pXVX8oH-QCv8WNzq8X2R3l",
+          "name": "McEntire_Construction_Consulting_Contract.docx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          "modifiedTime": "2026-03-04T01:36:10.355Z",
+          "webViewLink": "https://docs.google.com/document/d/1I3ON0kP8__pXVX8oH-QCv8WNzq8X2R3l/edit?usp=drivesdk&ouid=108259322955966267653&rtpof=true&sd=true"
+        },
+        {
+          "id": "1cE_CYcwUDmWJrnxiHc2q0rEXA3Q0LR45",
+          "name": "Texas Agricultural or Timber Registration .pdf",
+          "mimeType": "application/pdf",
+          "modifiedTime": "2026-02-22T06:29:30.541Z",
+          "webViewLink": "https://drive.google.com/file/d/1cE_CYcwUDmWJrnxiHc2q0rEXA3Q0LR45/view?usp=drivesdk"
+        },
+        {
+          "id": "17AGImRUzNStV8JSdg3zVIftizNb8sFty",
+          "name": "LEASE AGREEMENT R3.docx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          "modifiedTime": "2026-02-22T06:29:30.411Z",
+          "webViewLink": "https://docs.google.com/document/d/17AGImRUzNStV8JSdg3zVIftizNb8sFty/edit?usp=drivesdk&ouid=108259322955966267653&rtpof=true&sd=true"
+        }
+      ]
+    },
+    "microsoft": {
+      "synced_at": "2026-04-18T22:17:26.244Z",
+      "partial": true,
+      "issues": [
+        {
+          "endpoint": "mail",
+          "status": 401,
+          "body": null
+        },
+        {
+          "endpoint": "calendar",
+          "status": 401,
+          "body": null
+        },
+        {
+          "endpoint": "drive",
+          "status": 400,
+          "body": {
+            "error": {
+              "code": "BadRequest",
+              "message": "Tenant does not have a SPO license.",
+              "innerError": {
+                "date": "2026-04-18T22:17:25",
+                "request-id": "5bf2108b-b027-46b1-9879-c6cbec9b4f2b",
+                "client-request-id": "5bf2108b-b027-46b1-9879-c6cbec9b4f2b"
+              }
+            }
+          }
+        }
+      ],
+      "profile": {
+        "displayName": "Mac McEntire",
+        "userPrincipalName": "mbar.xact_gmail.com#EXT#@mbarxactgmail.onmicrosoft.com",
+        "mail": null,
+        "id": "3abc88df-d219-45fd-b124-c241d562b7ed"
+      },
+      "summary": {
+        "recentMessages": 0,
+        "upcomingEvents": 0,
+        "driveItems": 0
+      },
+      "mail": null,
+      "calendar": null,
+      "drive": [],
+      "driveError": {
+        "endpoint": "drive",
+        "status": 400,
+        "body": {
+          "error": {
+            "code": "BadRequest",
+            "message": "Tenant does not have a SPO license.",
+            "innerError": {
+              "date": "2026-04-18T22:17:25",
+              "request-id": "5bf2108b-b027-46b1-9879-c6cbec9b4f2b",
+              "client-request-id": "5bf2108b-b027-46b1-9879-c6cbec9b4f2b"
+            }
+          }
+        }
+      }
+    }
   },
   "store": {
     "entities": [
