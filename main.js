@@ -150,53 +150,39 @@ function setDetail(title, lines = [], links = []) {
   detailContent.innerHTML = `<h3>${title}</h3><p>${lines.filter(Boolean).join('</p><p>')}</p>${links.length ? `<div class="actions">${links.map((link) => `<a class="button" href="${link.href}" target="_blank" rel="noopener noreferrer">${link.label}</a>`).join('')}</div>` : ''}`;
 }
 
-function renderSearchResults(query) {
+async function renderSearchResults(query) {
   if (!hub) return;
-  const q = query.trim().toLowerCase();
+  const q = query.trim();
   if (!q) {
     searchResults.innerHTML = '<div class="card"><strong>Search the memory graph</strong><div class="muted">Try names, projects, topics, docs, or files.</div></div>';
     return;
   }
 
-  const results = [];
-  for (const memory of hub.store.memories || []) {
-    const blob = `${memory.title} ${memory.summary} ${memory.excerpt || ''}`.toLowerCase();
-    if (blob.includes(q)) results.push({ type: 'memory', item: memory });
-  }
-  for (const source of hub.store.sources || []) {
-    const blob = `${source.path} ${source.kind} ${source.platform}`.toLowerCase();
-    if (blob.includes(q)) results.push({ type: 'source', item: source });
-  }
-  for (const entity of hub.store.entities || []) {
-    const blob = `${entity.label} ${(entity.aliases || []).join(' ')}`.toLowerCase();
-    if (blob.includes(q)) results.push({ type: 'entity', item: entity });
-  }
+  try {
+    const res = await fetch(`${BACKEND_BASE}/api/search?q=${encodeURIComponent(q)}`);
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.message || 'Search failed');
+    const results = data.results || [];
+    if (!results.length) {
+      searchResults.innerHTML = '<div class="card"><strong>No results</strong><div class="muted">Try a broader term.</div></div>';
+      return;
+    }
 
-  if (!results.length) {
-    searchResults.innerHTML = '<div class="card"><strong>No results</strong><div class="muted">Try a broader term.</div></div>';
-    return;
-  }
+    searchResults.innerHTML = results.slice(0, 20).map((result, index) => {
+      return `<button class="card search-result" data-result-index="${index}" style="text-align:left; cursor:pointer"><strong>${result.title}</strong><div class="muted">${result.type}</div><div class="muted">${result.snippet || ''}</div></button>`;
+    }).join('');
 
-  searchResults.innerHTML = results.slice(0, 12).map((result, index) => {
-    const label = result.type === 'memory' ? result.item.title : result.type === 'source' ? result.item.path : result.item.label;
-    const meta = result.type === 'memory' ? `${result.item.timestamp} • ${result.item.platform}` : result.type === 'source' ? `${result.item.kind} • ${result.item.platform}` : result.item.type;
-    return `<button class="card search-result" data-result-index="${index}" style="text-align:left; cursor:pointer"><strong>${label}</strong><div class="muted">${meta}</div></button>`;
-  }).join('');
-
-  [...document.querySelectorAll('.search-result')].forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const result = results[Number(btn.dataset.resultIndex)];
-      if (!result) return;
-      if (result.type === 'memory') {
-        setDetail(result.item.title, [result.item.summary, result.item.excerpt || '', `Source: ${result.item.rawPath}`]);
-      } else if (result.type === 'source') {
-        const links = result.item.path.startsWith('http') ? [{ label: 'Open source', href: result.item.path }] : [];
-        setDetail(result.item.path, [`Kind: ${result.item.kind}`, `Platform: ${result.item.platform}`], links);
-      } else {
-        setDetail(result.item.label, [`Type: ${result.item.type}`, `Aliases: ${(result.item.aliases || []).join(', ') || 'none'}`]);
-      }
+    [...document.querySelectorAll('.search-result')].forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const result = results[Number(btn.dataset.resultIndex)];
+        if (!result) return;
+        const links = result.path && result.path.startsWith('http') ? [{ label: 'Open', href: result.path }] : [];
+        setDetail(result.title, [result.type, result.snippet || '', result.path ? `Path: ${result.path}` : ''], links);
+      });
     });
-  });
+  } catch (err) {
+    searchResults.innerHTML = `<div class="card"><strong>Search failed</strong><div class="muted">${err.message}</div></div>`;
+  }
 }
 
 function renderSettings(connectors) {
@@ -361,6 +347,7 @@ saveMemoryBtn?.addEventListener('click', async () => {
     memoryTitle.value = '';
     memorySummary.value = '';
     memoryTags.value = '';
+    await Promise.all([loadBackendStatus(), renderSearchResults(searchInput?.value || '')]);
   } catch (err) {
     memorySaveStatus.textContent = `Save failed: ${err.message}`;
   }

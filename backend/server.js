@@ -398,6 +398,13 @@ function getBuffer(url, accessToken, extraHeaders = {}) {
   });
 }
 
+function searchWorkspaceMemory(query) {
+  if (!existsSync(workspaceMemoryDir)) return [];
+  const q = query.toLowerCase();
+  const files = readFileSync ? [] : [];
+  return [];
+}
+
 const server = http.createServer(async (req, res) => {
   if (!req.url) return sendJson(res, 400, { error: 'Missing URL' });
   if (req.method === 'OPTIONS') return sendJson(res, 200, { ok: true });
@@ -586,6 +593,43 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, { ok: true, path: savedPath, message: 'Memory saved to workspace daily note.' });
     } catch (err) {
       return sendJson(res, 500, { ok: false, message: 'Failed to save memory.', error: String(err) });
+    }
+  }
+
+  if (req.method === 'GET' && req.url.startsWith('/api/search')) {
+    const query = extractQuery(req.url).trim();
+    if (!query) return sendJson(res, 400, { ok: false, message: 'Missing search query. Use ?q=resume' });
+    try {
+      const q = query.toLowerCase();
+      const results = [];
+
+      if (existsSync(workspaceMemoryDir)) {
+        for (const file of (await import('node:fs')).readdirSync(workspaceMemoryDir).filter((f) => f.endsWith('.md'))) {
+          const path = join(workspaceMemoryDir, file);
+          const content = readFileSync(path, 'utf8');
+          if (content.toLowerCase().includes(q)) {
+            results.push({ type: 'memory-file', title: file, path: `memory/${file}`, snippet: content.slice(0, 280) });
+          }
+        }
+      }
+
+      const googleSync = loadGoogleSyncStore();
+      if (googleSync?.drive) {
+        for (const file of googleSync.drive) {
+          const blob = `${file.name} ${file.mimeType || ''}`.toLowerCase();
+          if (blob.includes(q)) results.push({ type: 'google-drive', title: file.name, path: file.webViewLink || '', snippet: file.mimeType || '' });
+        }
+      }
+      if (googleSync?.gmail) {
+        for (const mail of googleSync.gmail) {
+          const blob = `${mail.snippet || ''}`.toLowerCase();
+          if (blob.includes(q)) results.push({ type: 'gmail', title: mail.id, path: '', snippet: mail.snippet || '' });
+        }
+      }
+
+      return sendJson(res, 200, { ok: true, query, results: results.slice(0, 20) });
+    } catch (err) {
+      return sendJson(res, 500, { ok: false, message: 'Search failed.', error: String(err) });
     }
   }
 
