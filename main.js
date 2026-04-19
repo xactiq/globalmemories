@@ -150,6 +150,15 @@ function setDetail(title, lines = [], links = []) {
   detailContent.innerHTML = `<h3>${title}</h3><p>${lines.filter(Boolean).join('</p><p>')}</p>${links.length ? `<div class="actions">${links.map((link) => `<a class="button" href="${link.href}" target="_blank" rel="noopener noreferrer">${link.label}</a>`).join('')}</div>` : ''}`;
 }
 
+async function refreshHubData() {
+  try {
+    const res = await fetch(`./hub-data.json?ts=${Date.now()}`);
+    if (!res.ok) throw new Error(`Hub reload ${res.status}`);
+    hub = await res.json();
+    renderHub();
+  } catch {}
+}
+
 async function renderSearchResults(query) {
   if (!hub) return;
   const q = query.trim();
@@ -176,7 +185,9 @@ async function renderSearchResults(query) {
       btn.addEventListener('click', () => {
         const result = results[Number(btn.dataset.resultIndex)];
         if (!result) return;
-        const links = result.path && result.path.startsWith('http') ? [{ label: 'Open', href: result.path }] : [];
+        const links = [];
+        if (result.path && result.path.startsWith('http')) links.push({ label: 'Open', href: result.path });
+        if (result.type === 'google-drive' && result.path) links.push({ label: 'Open doc', href: result.path });
         setDetail(result.title, [result.type, result.snippet || '', result.path ? `Path: ${result.path}` : ''], links);
       });
     });
@@ -347,7 +358,7 @@ saveMemoryBtn?.addEventListener('click', async () => {
     memoryTitle.value = '';
     memorySummary.value = '';
     memoryTags.value = '';
-    await Promise.all([loadBackendStatus(), renderSearchResults(searchInput?.value || '')]);
+    await Promise.all([refreshHubData(), loadBackendStatus(), renderSearchResults(searchInput?.value || '')]);
   } catch (err) {
     memorySaveStatus.textContent = `Save failed: ${err.message}`;
   }

@@ -1,6 +1,6 @@
 import http from 'node:http';
 import https from 'node:https';
-import { readFileSync, existsSync, writeFileSync, appendFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, existsSync, writeFileSync, appendFileSync, mkdirSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 const envPath = join(process.cwd(), '.env');
@@ -401,8 +401,20 @@ function getBuffer(url, accessToken, extraHeaders = {}) {
 function searchWorkspaceMemory(query) {
   if (!existsSync(workspaceMemoryDir)) return [];
   const q = query.toLowerCase();
-  const files = readFileSync ? [] : [];
-  return [];
+  const results = [];
+  for (const file of readdirSync(workspaceMemoryDir).filter((f) => f.endsWith('.md'))) {
+    const path = join(workspaceMemoryDir, file);
+    const content = readFileSync(path, 'utf8');
+    if (content.toLowerCase().includes(q)) {
+      results.push({
+        type: 'memory-file',
+        title: file,
+        path: `memory/${file}`,
+        snippet: content.slice(0, 280)
+      });
+    }
+  }
+  return results;
 }
 
 const server = http.createServer(async (req, res) => {
@@ -603,15 +615,7 @@ const server = http.createServer(async (req, res) => {
       const q = query.toLowerCase();
       const results = [];
 
-      if (existsSync(workspaceMemoryDir)) {
-        for (const file of (await import('node:fs')).readdirSync(workspaceMemoryDir).filter((f) => f.endsWith('.md'))) {
-          const path = join(workspaceMemoryDir, file);
-          const content = readFileSync(path, 'utf8');
-          if (content.toLowerCase().includes(q)) {
-            results.push({ type: 'memory-file', title: file, path: `memory/${file}`, snippet: content.slice(0, 280) });
-          }
-        }
-      }
+      results.push(...searchWorkspaceMemory(query));
 
       const googleSync = loadGoogleSyncStore();
       if (googleSync?.drive) {
