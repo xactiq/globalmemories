@@ -4,9 +4,7 @@
 
 A temporary passphrase gate has been added for the prototype deployment.
 
-Current passphrase:
-
-- `151cr394`
+The plaintext passphrase should not be documented in repo files.
 
 Change it before wider use by updating `config.js` with a new SHA-256 hash.
 
