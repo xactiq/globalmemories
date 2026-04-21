@@ -2,6 +2,13 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
   "rewrites": [
+    {
+      "source": "/(.*)",
+      "has": [
+        { "type": "host", "value": "mc.xactiq.net" }
+      ],
+      "destination": "/mission-control.html"
+    },
     { "source": "/mission-control", "destination": "/mission-control.html" }
   ],
   "headers": [
