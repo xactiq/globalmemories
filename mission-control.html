@@ -5,26 +5,233 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mission Control</title>
     <style>
-      :root { color-scheme: dark; }
-      body { margin: 0; font-family: Inter, system-ui, sans-serif; background: #07111f; color: #e8f0ff; }
-      .wrap { max-width: 980px; margin: 0 auto; padding: 24px; }
-      .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
-      .card { padding: 16px; border-radius: 14px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); }
-      .muted { color: #8fa7ca; font-size: 13px; }
-      .list { display: grid; gap: 10px; margin-top: 16px; }
-      h1, h2, h3 { margin-top: 0; }
-      code { color: #93c5fd; }
+      :root {
+        color-scheme: dark;
+        --bg: #07111f;
+        --panel: rgba(255,255,255,0.04);
+        --panel-strong: rgba(255,255,255,0.07);
+        --border: rgba(255,255,255,0.1);
+        --text: #e8f0ff;
+        --muted: #8fa7ca;
+        --good: #34d399;
+        --warn: #fbbf24;
+        --bad: #f87171;
+        --info: #60a5fa;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: Inter, system-ui, sans-serif;
+        background: radial-gradient(circle at top, #10203d 0, var(--bg) 55%);
+        color: var(--text);
+      }
+      .wrap {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 28px;
+      }
+      .header {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: flex-start;
+        margin-bottom: 24px;
+      }
+      .titleblock h1 {
+        margin: 0 0 8px;
+        font-size: 34px;
+      }
+      .muted { color: var(--muted); }
+      .toolbar {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .badge, .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: rgba(255,255,255,0.05);
+        padding: 8px 12px;
+        font-size: 13px;
+      }
+      .button {
+        border: 1px solid var(--border);
+        background: var(--panel-strong);
+        color: var(--text);
+        border-radius: 10px;
+        padding: 9px 12px;
+        cursor: pointer;
+      }
+      .button:hover { background: rgba(255,255,255,0.12); }
+      .grid {
+        display: grid;
+        gap: 16px;
+      }
+      .top-grid {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        margin-bottom: 20px;
+      }
+      .two-col {
+        grid-template-columns: 1.2fr 0.8fr;
+        margin-bottom: 20px;
+      }
+      .three-col {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 16px;
+        min-width: 0;
+      }
+      .card h2, .card h3 {
+        margin: 0 0 12px;
+      }
+      .metric {
+        font-size: 30px;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+      .metric-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: baseline;
+      }
+      .list {
+        display: grid;
+        gap: 10px;
+      }
+      .item {
+        padding: 12px;
+        border-radius: 12px;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.06);
+      }
+      .item strong { display: block; margin-bottom: 4px; }
+      .health-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        display: inline-block;
+      }
+      .good { color: var(--good); }
+      .warn { color: var(--warn); }
+      .bad { color: var(--bad); }
+      .info { color: var(--info); }
+      .health-good { background: var(--good); }
+      .health-warn { background: var(--warn); }
+      .health-bad { background: var(--bad); }
+      .health-info { background: var(--info); }
+      .section-title {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+      .kvs {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 8px 12px;
+        font-size: 14px;
+      }
+      code {
+        color: #bfdbfe;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        word-break: break-all;
+      }
+      .empty {
+        padding: 14px;
+        border-radius: 12px;
+        background: rgba(255,255,255,0.03);
+        border: 1px dashed rgba(255,255,255,0.12);
+        color: var(--muted);
+      }
+      @media (max-width: 960px) {
+        .two-col, .three-col { grid-template-columns: 1fr; }
+        .header { flex-direction: column; }
+      }
     </style>
   </head>
   <body>
     <div class="wrap">
-      <h1>Mission Control</h1>
-      <p class="muted">Operational overview for connectors, jobs, audit state, and system trust. Intended destination: <strong>mc.xactiq.net</strong>.</p>
-      <div class="grid" id="overview"></div>
-      <h2 style="margin-top:24px">Recent jobs</h2>
-      <div class="list" id="jobs"></div>
-      <h2 style="margin-top:24px">Recent audit events</h2>
-      <div class="list" id="audit"></div>
+      <div class="header">
+        <div class="titleblock">
+          <h1>Mission Control</h1>
+          <div class="muted">Live operational view for canonical memory, connector health, sync activity, and audit visibility.</div>
+        </div>
+        <div class="toolbar">
+          <div class="badge" id="statusBadge">Connecting…</div>
+          <div class="badge" id="lastUpdatedBadge">Waiting for first refresh</div>
+          <button class="button" id="refreshButton" type="button">Refresh now</button>
+        </div>
+      </div>
+
+      <div class="grid top-grid" id="summaryGrid"></div>
+
+      <div class="grid two-col">
+        <div class="card">
+          <div class="section-title">
+            <h2>Alerts</h2>
+            <span class="muted">What needs attention</span>
+          </div>
+          <div class="list" id="alertsList"></div>
+        </div>
+        <div class="card">
+          <div class="section-title">
+            <h2>Runtime</h2>
+            <span class="muted">How this dashboard is connected</span>
+          </div>
+          <div class="kvs" id="runtimeKvs"></div>
+        </div>
+      </div>
+
+      <div class="grid two-col">
+        <div class="card">
+          <div class="section-title">
+            <h2>Connectors</h2>
+            <span class="muted">Source health and last sync state</span>
+          </div>
+          <div class="list" id="connectorsList"></div>
+        </div>
+        <div class="card">
+          <div class="section-title">
+            <h2>Canonical store</h2>
+            <span class="muted">Counts and backing files</span>
+          </div>
+          <div class="list" id="storeList"></div>
+        </div>
+      </div>
+
+      <div class="grid three-col">
+        <div class="card">
+          <div class="section-title">
+            <h2>Recent memories</h2>
+            <span class="muted">Newest canonical records</span>
+          </div>
+          <div class="list" id="memoriesList"></div>
+        </div>
+        <div class="card">
+          <div class="section-title">
+            <h2>Recent jobs</h2>
+            <span class="muted">Sync and workflow activity</span>
+          </div>
+          <div class="list" id="jobsList"></div>
+        </div>
+        <div class="card">
+          <div class="section-title">
+            <h2>Recent audit events</h2>
+            <span class="muted">Governance trail</span>
+          </div>
+          <div class="list" id="auditList"></div>
+        </div>
+      </div>
     </div>
     <script type="module" src="./mission-control.js"></script>
   </body>

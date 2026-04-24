@@ -2,3 +2,7 @@ node_modules/
 .env
 .env.local
 .DS_Store
+backend/.google-sync.json
+backend/.google-tokens.json
+backend/.microsoft-sync.json
+backend/.microsoft-tokens.json

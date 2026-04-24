@@ -3,7 +3,7 @@ import https from 'node:https';
 import { readFileSync, existsSync, writeFileSync, appendFileSync, mkdirSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadPlatformStore, savePlatformStore, buildMiroExport, saveMiroExport, getPlatformPaths, appendPlatformJob, updatePlatformJob, appendAuditEvent } from './platform-store.js';
-import { getConnectorOverview, getJobOverview, getAuditOverview } from './mission-control-service.js';
+import { getConnectorOverview, getJobOverview, getAuditOverview, buildMissionControlSnapshot } from './mission-control-service.js';
 
 const envPath = join(process.cwd(), '.env');
 if (existsSync(envPath)) {
@@ -51,6 +51,7 @@ const googleScopes = [
   'https://www.googleapis.com/auth/calendar.readonly',
   'https://www.googleapis.com/auth/drive.readonly'
 ];
+const serverStartedAt = new Date().toISOString();
 
 function loadJson(path) {
   if (!existsSync(path)) return null;
@@ -345,6 +346,11 @@ function extractQuery(reqUrl) {
   return url.searchParams.get('q') || url.searchParams.get('query') || '';
 }
 
+function extractWorkspaceId(reqUrl) {
+  const url = new URL(reqUrl, `http://localhost:${port}`);
+  return url.searchParams.get('workspaceId') || '';
+}
+
 function extractFileId(reqUrl) {
   const url = new URL(reqUrl, `http://localhost:${port}`);
   return url.searchParams.get('id') || '';
@@ -378,6 +384,20 @@ function persistPlatformStore(store) {
   saveMiroExport(buildMiroExport(store));
 }
 
+function createAuditEvent({ workspaceId, actorId = 'mission-control', actorType = 'system', action, targetType, targetId, payload = {} }) {
+  return {
+    auditEventId: `audit-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    workspaceId,
+    actorId,
+    actorType,
+    action,
+    targetType,
+    targetId,
+    payload,
+    createdAt: new Date().toISOString()
+  };
+}
+
 function appendCanonicalMemory({ title, summary, tags, savedPath }) {
   const store = loadPlatformStore();
   if (!store) return null;
@@ -409,17 +429,15 @@ function appendCanonicalMemory({ title, summary, tags, savedPath }) {
     updatedAt: new Date().toISOString()
   };
   store.memories = [memory, ...(store.memories || [])];
-  store.auditEvents = [{
-    auditEventId: `audit-${Date.now()}`,
+  store.auditEvents = [createAuditEvent({
     workspaceId: memory.workspaceId,
     actorId: 'memory-hub',
     actorType: 'system',
     action: 'memory.created',
     targetType: 'memory',
     targetId: memory.memoryId,
-    payload: { title: memory.title },
-    createdAt: new Date().toISOString()
-  }, ...(store.auditEvents || [])];
+    payload: { title: memory.title }
+  }), ...(store.auditEvents || [])];
   persistPlatformStore(store);
   return memory;
 }
@@ -503,11 +521,36 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (req.method === 'GET' && req.url === '/api/mission-control/overview') {
+    const googleStatus = getGoogleStatus();
+    const microsoftStatus = getMicrosoftStatus();
+    const snapshot = buildMissionControlSnapshot({
+      googleStatus,
+      microsoftStatus,
+      serverStartedAt,
+      port,
+      host: req.headers.host || null
+    });
     return sendJson(res, 200, {
       ok: true,
-      connectors: getConnectorOverview(),
+      connectors: getConnectorOverview(snapshot.connectors.items),
       jobs: getJobOverview(),
-      audit: getAuditOverview()
+      audit: getAuditOverview(),
+      snapshot
+    });
+  }
+
+  if (req.method === 'GET' && req.url === '/api/mission-control/snapshot') {
+    const googleStatus = getGoogleStatus();
+    const microsoftStatus = getMicrosoftStatus();
+    return sendJson(res, 200, {
+      ok: true,
+      snapshot: buildMissionControlSnapshot({
+        googleStatus,
+        microsoftStatus,
+        serverStartedAt,
+        port,
+        host: req.headers.host || null
+      })
     });
   }
 
@@ -519,6 +562,182 @@ const server = http.createServer(async (req, res) => {
       return !query || blob.includes(query);
     });
     return sendJson(res, 200, { ok: true, results: memories });
+  }
+
+  if (req.method === 'GET' && req.url.startsWith('/api/graph')) {
+    const workspaceId = extractWorkspaceId(req.url);
+    const store = loadPlatformStore();
+    const memoryNodes = (store?.memories || [])
+      .filter((item) => !workspaceId || item.workspaceId === workspaceId)
+      .map((memory) => ({
+        id: memory.memoryId,
+        type: 'memory',
+        label: memory.title,
+        summary: memory.summary,
+        memoryType: memory.memoryType,
+        updatedAt: memory.updatedAt || memory.createdAt || null
+      }));
+    const entityNodes = (store?.entities || [])
+      .filter((item) => !workspaceId || item.workspaceId === workspaceId)
+      .map((entity) => ({
+        id: entity.entityId,
+        type: entity.type || 'entity',
+        label: entity.name,
+        summary: entity.summary || '',
+        updatedAt: entity.updatedAt || entity.createdAt || null
+      }));
+    const sourceNodes = (store?.sources || [])
+      .filter((item) => !workspaceId || item.workspaceId === workspaceId)
+      .map((source) => ({
+        id: source.sourceId,
+        type: `source:${source.kind || 'unknown'}`,
+        label: source.title || source.externalId || source.sourceId,
+        provider: source.provider,
+        updatedAt: source.updatedAt || source.createdAt || null,
+        url: source.url || null
+      }));
+    const relationshipEdges = (store?.relationships || [])
+      .filter((item) => !workspaceId || item.workspaceId === workspaceId)
+      .map((rel) => ({
+        id: rel.relationshipId,
+        from: rel.fromId,
+        to: rel.toId,
+        label: rel.relationshipType,
+        weight: rel.weight ?? null
+      }));
+    const provenanceEdges = (store?.memories || [])
+      .filter((item) => !workspaceId || item.workspaceId === workspaceId)
+      .flatMap((memory) => (memory.sourceRefs || []).map((ref, index) => ({
+        id: `prov-${memory.memoryId}-${ref.sourceId || index}`,
+        from: memory.memoryId,
+        to: ref.sourceId,
+        label: 'sourced-from',
+        weight: ref.confidence ?? null
+      })));
+    return sendJson(res, 200, {
+      ok: true,
+      workspaceId: workspaceId || null,
+      nodes: [...memoryNodes, ...entityNodes, ...sourceNodes],
+      edges: [...relationshipEdges, ...provenanceEdges]
+    });
+  }
+
+  if (req.method === 'GET' && req.url.startsWith('/api/source/')) {
+    const sourceId = req.url.split('/api/source/')[1]?.split('?')[0];
+    const store = loadPlatformStore();
+    const source = (store?.sources || []).find((item) => item.sourceId === sourceId);
+    if (!source) return sendJson(res, 404, { ok: false, message: 'Source not found.' });
+    return sendJson(res, 200, { ok: true, source });
+  }
+
+  if (req.method === 'GET' && req.url.startsWith('/api/entities/')) {
+    const entityId = req.url.split('/api/entities/')[1]?.split('?')[0];
+    const store = loadPlatformStore();
+    const entity = (store?.entities || []).find((item) => item.entityId === entityId);
+    if (!entity) return sendJson(res, 404, { ok: false, message: 'Entity not found.' });
+    return sendJson(res, 200, { ok: true, entity });
+  }
+
+  if (req.method === 'POST' && req.url === '/api/entities') {
+    try {
+      const raw = await readBody(req);
+      const body = parseJsonMaybe(raw);
+      if (!body?.name) return sendJson(res, 400, { ok: false, message: 'Need entity name.' });
+      const store = loadPlatformStore();
+      if (!store) return sendJson(res, 500, { ok: false, message: 'Platform store unavailable.' });
+      const workspaceId = String(body.workspaceId || store.workspaces?.[0]?.workspaceId || 'default');
+      const entity = {
+        entityId: `ent-${Date.now()}`,
+        workspaceId,
+        type: String(body.type || 'entity'),
+        name: String(body.name).trim(),
+        aliases: Array.isArray(body.aliases) ? body.aliases.map((item) => String(item).trim()).filter(Boolean) : [],
+        summary: String(body.summary || '').trim(),
+        attributes: body.attributes && typeof body.attributes === 'object' ? body.attributes : {},
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      store.entities = [entity, ...(store.entities || [])];
+      store.auditEvents = [createAuditEvent({
+        workspaceId,
+        action: 'entity.created',
+        targetType: 'entity',
+        targetId: entity.entityId,
+        payload: { name: entity.name }
+      }), ...(store.auditEvents || [])];
+      persistPlatformStore(store);
+      return sendJson(res, 200, { ok: true, entity });
+    } catch (err) {
+      return sendJson(res, 500, { ok: false, message: 'Failed to create entity.', error: String(err) });
+    }
+  }
+
+  if (req.method === 'PATCH' && req.url.startsWith('/api/entities/')) {
+    try {
+      const entityId = req.url.split('/api/entities/')[1]?.split('?')[0];
+      const raw = await readBody(req);
+      const body = parseJsonMaybe(raw);
+      const store = loadPlatformStore();
+      const entities = store?.entities || [];
+      const index = entities.findIndex((item) => item.entityId === entityId);
+      if (index === -1) return sendJson(res, 404, { ok: false, message: 'Entity not found.' });
+      entities[index] = {
+        ...entities[index],
+        ...(body?.name ? { name: String(body.name).trim() } : {}),
+        ...(body?.summary ? { summary: String(body.summary).trim() } : {}),
+        ...(body?.type ? { type: String(body.type).trim() } : {}),
+        ...(Array.isArray(body?.aliases) ? { aliases: body.aliases.map((item) => String(item).trim()).filter(Boolean) } : {}),
+        ...(body?.attributes && typeof body.attributes === 'object' ? { attributes: body.attributes } : {}),
+        updatedAt: new Date().toISOString()
+      };
+      store.entities = entities;
+      store.auditEvents = [createAuditEvent({
+        workspaceId: entities[index].workspaceId,
+        action: 'entity.updated',
+        targetType: 'entity',
+        targetId: entities[index].entityId,
+        payload: { name: entities[index].name }
+      }), ...(store.auditEvents || [])];
+      persistPlatformStore(store);
+      return sendJson(res, 200, { ok: true, entity: entities[index] });
+    } catch (err) {
+      return sendJson(res, 500, { ok: false, message: 'Failed to update entity.', error: String(err) });
+    }
+  }
+
+  if (req.method === 'POST' && req.url === '/api/relationships') {
+    try {
+      const raw = await readBody(req);
+      const body = parseJsonMaybe(raw);
+      if (!body?.fromId || !body?.toId || !body?.relationshipType) {
+        return sendJson(res, 400, { ok: false, message: 'Need fromId, toId, and relationshipType.' });
+      }
+      const store = loadPlatformStore();
+      if (!store) return sendJson(res, 500, { ok: false, message: 'Platform store unavailable.' });
+      const relationship = {
+        relationshipId: `rel-${Date.now()}`,
+        workspaceId: String(body.workspaceId || store.workspaces?.[0]?.workspaceId || 'default'),
+        fromId: String(body.fromId),
+        toId: String(body.toId),
+        relationshipType: String(body.relationshipType),
+        weight: typeof body.weight === 'number' ? body.weight : 1,
+        sourceRefs: Array.isArray(body.sourceRefs) ? body.sourceRefs : [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      store.relationships = [relationship, ...(store.relationships || [])];
+      store.auditEvents = [createAuditEvent({
+        workspaceId: relationship.workspaceId,
+        action: 'relationship.created',
+        targetType: 'relationship',
+        targetId: relationship.relationshipId,
+        payload: { fromId: relationship.fromId, toId: relationship.toId, relationshipType: relationship.relationshipType }
+      }), ...(store.auditEvents || [])];
+      persistPlatformStore(store);
+      return sendJson(res, 200, { ok: true, relationship });
+    } catch (err) {
+      return sendJson(res, 500, { ok: false, message: 'Failed to create relationship.', error: String(err) });
+    }
   }
 
   if (req.method === 'GET' && req.url.startsWith('/api/memory/') && req.url.endsWith('/provenance')) {
